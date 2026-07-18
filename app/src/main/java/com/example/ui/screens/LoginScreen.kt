@@ -204,7 +204,7 @@ fun LoginScreen(
                         onClick = {
                             try {
                                 isLoading = true
-                                val webClientId = context.getString(com.example.R.string.default_web_client_id)
+                                val webClientId = context.getString(com.Muhsin.kutuphane.R.string.default_web_client_id)
                                 if (webClientId == "1234567890-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com") {
                                     isLoading = false
                                     lastGoogleError = "Uygulamada varsayılan test istemci kimliği (default_web_client_id) bulunuyor. Gerçek Google Girişi için Firebase Client ID tanımlanmalıdır."

@@ -1,5 +1,5 @@
 {
-  "name": "Kutsal Metinler",
+  "name": "Scriptorium",
   "description": "Dünyanın en köklü kutsal metinlerinin (Kur'an-ı Kerim, Tevrat, İncil) derin bir tefekkür için korunmuş, özenle seçilmiş kütüphane koleksiyonu.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
