@@ -178,9 +178,9 @@ fun LibraryScreen(
                                                     .background(MaterialTheme.colorScheme.secondaryContainer)
                                             ) {
                                                 val coverModel: Any = when (book.id) {
-                                                    "quran" -> com.example.R.drawable.img_quran_cover
-                                                    "torah" -> com.example.R.drawable.img_torah_cover
-                                                    "sermon" -> com.example.R.drawable.img_bible_cover
+                                                    "quran" -> com.Muhsin.kutuphane.R.drawable.img_quran_cover
+                                                    "torah" -> com.Muhsin.kutuphane.R.drawable.img_torah_cover
+                                                    "sermon" -> com.Muhsin.kutuphane.R.drawable.img_bible_cover
                                                     else -> book.coverUrl
                                                 }
                                                 AsyncImage(

@@ -327,7 +327,7 @@ class DailyVerseReceiver : BroadcastReceiver() {
         )
 
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(com.example.R.drawable.ico_mesaj)
+            .setSmallIcon(com.Muhsin.kutuphane.R.drawable.ico_mesaj)
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))

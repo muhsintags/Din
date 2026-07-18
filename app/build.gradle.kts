@@ -10,7 +10,7 @@ plugins {
 }
 
 android {
-  namespace = "com.example"
+  namespace = "com.Muhsin.kutuphane"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
@@ -27,9 +27,9 @@ android {
     create("release") {
       val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
       storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
+      storePassword = System.getenv("STORE_PASSWORD") ?: "android"
+      keyAlias = System.getenv("KEY_ALIAS") ?: "upload"
+      keyPassword = System.getenv("KEY_PASSWORD") ?: "android"
     }
     create("debugConfig") {
       storeFile = file("${rootDir}/debug.keystore")
@@ -42,7 +42,8 @@ android {
   buildTypes {
     release {
       isCrunchPngs = false
-      isMinifyEnabled = false
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
     }

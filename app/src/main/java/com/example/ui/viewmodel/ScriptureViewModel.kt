@@ -128,8 +128,18 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             _isSurahLoading.value = true
             _surahError.value = null
-            _currentSurahContent.value = null
             stopAudio()
+
+            val langCode = _readerSettings.value.language.name
+            val cacheKey = "surah_${surahNumber}_$langCode"
+            val cachedContent = _surahInMemoryCache[cacheKey]
+            if (cachedContent != null) {
+                _currentSurahContent.value = cachedContent
+                _isSurahLoading.value = false
+                return@launch
+            }
+
+            _currentSurahContent.value = null
 
             // Step 1: Check if Surah is downloaded/cached offline
             val file = getQuranFile(surahNumber)
@@ -163,6 +173,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                     }
                 }
                 if (loadedOffline != null) {
+                    _surahInMemoryCache[cacheKey] = loadedOffline
                     _currentSurahContent.value = loadedOffline
                     _isSurahLoading.value = false
                     return@launch
@@ -216,6 +227,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                             englishName = englishName,
                             verses = versesList
                         )
+                        _surahInMemoryCache[cacheKey] = content
                         withContext(Dispatchers.Main) {
                             _currentSurahContent.value = content
                         }
@@ -781,8 +793,18 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             _isBookLoading.value = true
             _bookError.value = null
-            _activeBookContent.value = null
             stopAudio()
+
+            val langCode = _readerSettings.value.language.name
+            val cacheKey = "${bookId}_${bibleBook.id}_${chapterNumber}_$langCode"
+            val cachedBook = _bibleChapterInMemoryCache[cacheKey]
+            if (cachedBook != null) {
+                _activeBookContent.value = cachedBook
+                _isBookLoading.value = false
+                return@launch
+            }
+
+            _activeBookContent.value = null
 
             // Try loading offline first
             val file = getBibleChapterFile(bookId, bibleBook.id, chapterNumber)
@@ -861,6 +883,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                     }
                 }
                 if (loadedOffline != null) {
+                    _bibleChapterInMemoryCache[cacheKey] = loadedOffline
                     _activeBookContent.value = loadedOffline
                     _isBookLoading.value = false
                     return@launch
@@ -987,6 +1010,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                         }
                     )
                     
+                    _bibleChapterInMemoryCache[cacheKey] = formattedBook
                     withContext(Dispatchers.Main) {
                         _activeBookContent.value = formattedBook
                         _isBookLoading.value = false
@@ -1004,6 +1028,10 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _activeBookContent = MutableStateFlow<Book?>(null)
     val activeBookContent = _activeBookContent.asStateFlow()
+
+    // ViewModel-level in-memory cache to prevent redundant API/network calls
+    private val _surahInMemoryCache = java.util.concurrent.ConcurrentHashMap<String, QuranSurahContent>()
+    private val _bibleChapterInMemoryCache = java.util.concurrent.ConcurrentHashMap<String, Book>()
 
     private val _isBookLoading = MutableStateFlow(false)
     val isBookLoading = _isBookLoading.asStateFlow()
@@ -2088,7 +2116,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             )
 
             val notification = androidx.core.app.NotificationCompat.Builder(context, channelId)
-                .setSmallIcon(com.example.R.drawable.ico_mesaj)
+                .setSmallIcon(com.Muhsin.kutuphane.R.drawable.ico_mesaj)
                 .setContentTitle(fetched.first)
                 .setContentText(fetched.second)
                 .setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(fetched.second))
