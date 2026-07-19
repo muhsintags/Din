@@ -259,6 +259,40 @@ fun LoginScreen(
                         }
                     }
 
+                    // Guest / Offline Demo Sign-In Button
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.signInWithDemo("misafir@scriptorium.org", "Bilgelik Yolcusu")
+                            Toast.makeText(context, "Misafir Girişi Başarılı", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .testTag("guest_login_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Misafir / Çevrimdışı Giriş",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
                     // Divider
                     Row(
                         modifier = Modifier
@@ -411,47 +445,52 @@ fun LoginScreen(
                                         return@Button
                                     }
                                     isLoading = true
-                                    val authInstance = FirebaseAuth.getInstance()
-                                    if (isSignUpMode) {
-                                        authInstance.createUserWithEmailAndPassword(emailInput, passwordInput)
-                                            .addOnCompleteListener { task ->
-                                                if (task.isSuccessful) {
-                                                    val user = task.result?.user
-                                                    if (user != null) {
-                                                        val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
-                                                            .setDisplayName(nameInput)
-                                                            .build()
-                                                        user.updateProfile(profileUpdates).addOnCompleteListener { profileTask ->
+                                    try {
+                                        val authInstance = FirebaseAuth.getInstance()
+                                        if (isSignUpMode) {
+                                            authInstance.createUserWithEmailAndPassword(emailInput, passwordInput)
+                                                .addOnCompleteListener { task ->
+                                                    if (task.isSuccessful) {
+                                                        val user = task.result?.user
+                                                        if (user != null) {
+                                                            val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                                                                .setDisplayName(nameInput)
+                                                                .build()
+                                                            user.updateProfile(profileUpdates).addOnCompleteListener { profileTask ->
+                                                                isLoading = false
+                                                                viewModel.signInWithFirebaseUser(user)
+                                                                Toast.makeText(context, "Kayıt Başarılı: $nameInput", Toast.LENGTH_SHORT).show()
+                                                                onLoginSuccess()
+                                                            }
+                                                        } else {
                                                             isLoading = false
-                                                            viewModel.signInWithFirebaseUser(user)
-                                                            Toast.makeText(context, "Kayıt Başarılı: $nameInput", Toast.LENGTH_SHORT).show()
-                                                            onLoginSuccess()
                                                         }
                                                     } else {
                                                         isLoading = false
+                                                        val errorMsg = task.exception?.localizedMessage ?: "Kayıt başarısız oldu."
+                                                        Toast.makeText(context, "Hata: $errorMsg", Toast.LENGTH_LONG).show()
                                                     }
-                                                } else {
+                                                }
+                                        } else {
+                                            authInstance.signInWithEmailAndPassword(emailInput, passwordInput)
+                                                .addOnCompleteListener { task ->
                                                     isLoading = false
-                                                    val errorMsg = task.exception?.localizedMessage ?: "Kayıt başarısız oldu."
-                                                    Toast.makeText(context, "Hata: $errorMsg", Toast.LENGTH_LONG).show()
-                                                }
-                                            }
-                                    } else {
-                                        authInstance.signInWithEmailAndPassword(emailInput, passwordInput)
-                                            .addOnCompleteListener { task ->
-                                                isLoading = false
-                                                if (task.isSuccessful) {
-                                                    val user = task.result?.user
-                                                    if (user != null) {
-                                                        viewModel.signInWithFirebaseUser(user)
-                                                        Toast.makeText(context, "Giriş Başarılı: ${user.displayName ?: user.email}", Toast.LENGTH_SHORT).show()
-                                                        onLoginSuccess()
+                                                    if (task.isSuccessful) {
+                                                        val user = task.result?.user
+                                                        if (user != null) {
+                                                            viewModel.signInWithFirebaseUser(user)
+                                                            Toast.makeText(context, "Giriş Başarılı: ${user.displayName ?: user.email}", Toast.LENGTH_SHORT).show()
+                                                            onLoginSuccess()
+                                                        }
+                                                    } else {
+                                                        val errorMsg = task.exception?.localizedMessage ?: "Giriş başarısız oldu."
+                                                        Toast.makeText(context, "Hata: $errorMsg", Toast.LENGTH_LONG).show()
                                                     }
-                                                } else {
-                                                    val errorMsg = task.exception?.localizedMessage ?: "Giriş başarısız oldu."
-                                                    Toast.makeText(context, "Hata: $errorMsg", Toast.LENGTH_LONG).show()
                                                 }
-                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        isLoading = false
+                                        Toast.makeText(context, "Firebase Hizmetleri Başlatılamadı. Lütfen Misafir Girişini kullanın.", Toast.LENGTH_LONG).show()
                                     }
                                 },
                                 modifier = Modifier

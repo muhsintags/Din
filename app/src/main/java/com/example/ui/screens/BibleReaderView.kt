@@ -45,8 +45,21 @@ fun BibleReaderView(
     val isTorah = book.id == "torah"
     
     // Select correct state depending on which book we are in
-    val currentSelectedBook by (if (isTorah) viewModel.currentSelectedTorahBook else viewModel.currentSelectedSermonBook).collectAsState()
-    val currentSelectedChapter by (if (isTorah) viewModel.currentSelectedTorahChapter else viewModel.currentSelectedSermonChapter).collectAsState()
+    val currentSelectedBook by when (book.id) {
+        "torah" -> viewModel.currentSelectedTorahBook
+        "sermon" -> viewModel.currentSelectedSermonBook
+        "talmud" -> viewModel.currentSelectedTalmudBook
+        "bukhari" -> viewModel.currentSelectedBukhariBook
+        else -> viewModel.currentSelectedTorahBook
+    }.collectAsState()
+
+    val currentSelectedChapter by when (book.id) {
+        "torah" -> viewModel.currentSelectedTorahChapter
+        "sermon" -> viewModel.currentSelectedSermonChapter
+        "talmud" -> viewModel.currentSelectedTalmudChapter
+        "bukhari" -> viewModel.currentSelectedBukhariChapter
+        else -> viewModel.currentSelectedTorahChapter
+    }.collectAsState()
     
     val activeBookContentState by viewModel.activeBookContent.collectAsState()
     val activeBook = activeBookContentState ?: book
@@ -64,10 +77,31 @@ fun BibleReaderView(
     val downloadedChapters by viewModel.downloadedChapters.collectAsState()
     val downloadProgress by viewModel.downloadProgress.collectAsState()
 
-    val chapterKey = currentSelectedBook?.let { "${if (isTorah) "torah" else "sermon"}_${it.id}_$currentSelectedChapter" } ?: ""
+    val chapterKey = currentSelectedBook?.let { "${book.id}_${it.id}_$currentSelectedChapter" } ?: ""
     val isChapterDownloaded = downloadedChapters.contains(chapterKey)
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(currentSelectedChapter, activeBook) {
+        val chapterVal = currentSelectedChapter
+        if (book.id == "bukhari" && chapterVal != null && activeBook != null) {
+            kotlinx.coroutines.delay(100)
+            val paragraphsSize = activeBook.paragraphs.size
+            if (chapterVal in 1..paragraphsSize) {
+                listState.scrollToItem(chapterVal)
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.stopAudio()
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.stopAudio()
+        }
+    }
 
     // Automatic progress and timing tracker
     val startTime = remember(chapterKey) { System.currentTimeMillis() }
@@ -117,7 +151,13 @@ fun BibleReaderView(
     var noteQuoteText by remember { mutableStateOf("") }
     var noteTextQuery by remember { mutableStateOf("") }
     
-    val booksList = if (isTorah) BibleRepository.torahBooks else BibleRepository.bibleBooks
+    val booksList = when (book.id) {
+        "torah" -> BibleRepository.torahBooks
+        "sermon" -> BibleRepository.bibleBooks
+        "talmud" -> BibleRepository.talmudBooks
+        "bukhari" -> BibleRepository.bukhariBooks
+        else -> BibleRepository.bibleBooks
+    }
     val filteredBooks = remember(searchQuery) {
         if (searchQuery.isEmpty()) {
             booksList
@@ -261,9 +301,19 @@ fun BibleReaderView(
                 navigationIcon = {
                     IconButton(onClick = {
                         if (currentSelectedChapter != null) {
-                            if (isTorah) viewModel.selectTorahChapter(null) else viewModel.selectSermonChapter(null)
+                            when (book.id) {
+                                "torah" -> viewModel.selectTorahChapter(null)
+                                "sermon" -> viewModel.selectSermonChapter(null)
+                                "talmud" -> viewModel.selectTalmudChapter(null)
+                                "bukhari" -> viewModel.selectBukhariChapter(null)
+                            }
                         } else if (currentSelectedBook != null) {
-                            if (isTorah) viewModel.selectTorahBook(null) else viewModel.selectSermonBook(null)
+                            when (book.id) {
+                                "torah" -> viewModel.selectTorahBook(null)
+                                "sermon" -> viewModel.selectSermonBook(null)
+                                "talmud" -> viewModel.selectTalmudBook(null)
+                                "bukhari" -> viewModel.selectBukhariBook(null)
+                            }
                         } else {
                             onNavigateBack()
                         }
@@ -320,10 +370,12 @@ fun BibleReaderView(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = if (isTorah) {
-                            if (lang == AppLanguage.EN) "Live Torah Library" else "Canlı Tevrat Kütüphanesi"
-                        } else {
-                            if (lang == AppLanguage.EN) "Live Gospel Library" else "Canlı İncil Kütüphanesi"
+                        text = when (book.id) {
+                            "torah" -> if (lang == AppLanguage.EN) "Live Torah Library" else "Canlı Tevrat Kütüphanesi"
+                            "sermon" -> if (lang == AppLanguage.EN) "Live Gospel Library" else "Canlı İncil Kütüphanesi"
+                            "talmud" -> if (lang == AppLanguage.EN) "Live Talmud Library" else "Canlı Talmud Kütüphanesi"
+                            "bukhari" -> if (lang == AppLanguage.EN) "Sahih al-Bukhari Library" else "Sahih-i Buharî Kütüphanesi"
+                            else -> if (lang == AppLanguage.EN) "Live Gospel Library" else "Canlı İncil Kütüphanesi"
                         },
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
@@ -331,10 +383,12 @@ fun BibleReaderView(
                         modifier = Modifier.padding(top = 12.dp)
                     )
                     Text(
-                        text = if (isTorah) {
-                            if (lang == AppLanguage.EN) "Contemplate the 24 volumes of Hebrew scriptures and live academic translations with Sefaria API integration." else "Sefaria API entegrasyonu ile 24 ciltlik İbranice kutsal metinleri ve Kitab-ı Mukaddes dilindeki canlı akademik çevirileri tefekkür edin."
-                        } else {
-                            if (lang == AppLanguage.EN) "Read the teachings of Jesus Christ in their Greek originals and modern translations with Bible-API integration." else "Bible-API entegrasyonu ile Grekçe asılları ve yapay zekâ destekli klasik Türkçe çevirileri ile İsa Mesih'in öğretilerini okuyun."
+                        text = when (book.id) {
+                            "torah" -> if (lang == AppLanguage.EN) "Contemplate Hebrew scriptures and live academic translations with Sefaria API integration." else "Sefaria API entegrasyonu ile İbranice kutsal metinleri ve Kitab-ı Mukaddes dilindeki canlı akademik çevirileri tefekkür edin."
+                            "sermon" -> if (lang == AppLanguage.EN) "Read the teachings of Jesus Christ in their Greek originals and modern translations with Bible-API integration." else "Bible-API entegrasyonu ile Grekçe asılları ve yapay zekâ destekli klasik Türkçe çevirileri ile İsa Mesih'in öğretilerini okuyun."
+                            "talmud" -> if (lang == AppLanguage.EN) "Explore the Babylonian Talmud with modern commentary and parallel Aramaic text from Sefaria." else "Sefaria veritabanı aracılığıyla modern tefsirler ve paralel Aramice metinler eşliğinde Babil Talmudu'nu okuyun."
+                            "bukhari" -> if (lang == AppLanguage.EN) "Read Sahih al-Bukhari, the most authentic collection of Hadith, with English and Turkish translations." else "İslam dünyasının en sahih hadis külliyatı olan Sahih-i Buharî'yi Türkçe çevirileri ve Arapça asılları ile inceleyin."
+                            else -> ""
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -368,7 +422,12 @@ fun BibleReaderView(
                         itemsIndexed(filteredBooks) { _, bibleBook ->
                             Card(
                                 onClick = {
-                                    if (isTorah) viewModel.selectTorahBook(bibleBook) else viewModel.selectSermonBook(bibleBook)
+                                    when (book.id) {
+                                        "torah" -> viewModel.selectTorahBook(bibleBook)
+                                        "sermon" -> viewModel.selectSermonBook(bibleBook)
+                                        "talmud" -> viewModel.selectTalmudBook(bibleBook)
+                                        "bukhari" -> viewModel.selectBukhariBook(bibleBook)
+                                    }
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -487,17 +546,29 @@ fun BibleReaderView(
                                                 shape = RoundedCornerShape(8.dp)
                                             )
                                             .clickable {
-                                                if (isTorah) viewModel.selectTorahChapter(ch) else viewModel.selectSermonChapter(ch)
+                                                when (book.id) {
+                                                    "torah" -> viewModel.selectTorahChapter(ch)
+                                                    "sermon" -> viewModel.selectSermonChapter(ch)
+                                                    "talmud" -> viewModel.selectTalmudChapter(ch)
+                                                    "bukhari" -> viewModel.selectBukhariChapter(ch)
+                                                }
                                             }
                                             .testTag("chapter_button_$ch"),
                                         contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = ch.toString(),
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
+                                     ) {
+                                         val label = if (book.id == "talmud") {
+                                             val pageNum = 2 + (ch - 1) / 2
+                                             val side = if (ch % 2 == 1) "a" else "b"
+                                             "$pageNum$side"
+                                         } else {
+                                             ch.toString()
+                                         }
+                                         Text(
+                                             text = label,
+                                             style = MaterialTheme.typography.titleMedium,
+                                             fontWeight = FontWeight.Bold,
+                                             color = MaterialTheme.colorScheme.primary
+                                         )
                                     }
                                 }
                             }
@@ -551,7 +622,12 @@ fun BibleReaderView(
                                     val currentBook = currentSelectedBook
                                     val currentChapter = currentSelectedChapter
                                     if (currentBook != null && currentChapter != null) {
-                                        if (isTorah) viewModel.selectTorahChapter(currentChapter) else viewModel.selectSermonChapter(currentChapter)
+                                        when (book.id) {
+                                            "torah" -> viewModel.selectTorahChapter(currentChapter)
+                                            "sermon" -> viewModel.selectSermonChapter(currentChapter)
+                                            "talmud" -> viewModel.selectTalmudChapter(currentChapter)
+                                            "bukhari" -> viewModel.selectBukhariChapter(currentChapter)
+                                        }
                                     }
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = SacredGold)
@@ -725,7 +801,7 @@ fun BibleReaderView(
                                                 IconButton(
                                                     onClick = {
                                                         viewModel.deleteBibleChapterDownload(
-                                                            if (isTorah) "torah" else "sermon",
+                                                            book.id,
                                                             currentSelectedBook!!.id,
                                                             currentSelectedChapter!!
                                                         )
@@ -741,7 +817,7 @@ fun BibleReaderView(
                                                 IconButton(
                                                     onClick = {
                                                         viewModel.downloadBibleChapter(
-                                                            if (isTorah) "torah" else "sermon",
+                                                            book.id,
                                                             currentSelectedBook!!,
                                                             currentSelectedChapter!!
                                                         )
@@ -757,70 +833,7 @@ fun BibleReaderView(
                                         }
                                     }
 
-                                    val realHumanAudioUrl = viewModel.getRealHumanAudioUrl(isTorah)
-                                    if (realHumanAudioUrl != null) {
-                                        Divider(
-                                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
-                                            modifier = Modifier.padding(vertical = 4.dp)
-                                        )
-
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .background(SacredGold.copy(alpha = 0.08f))
-                                                .clickable {
-                                                    if (currentPlayingUrl == realHumanAudioUrl) {
-                                                        viewModel.togglePlayPause()
-                                                    } else {
-                                                        viewModel.playAudio(realHumanAudioUrl, -1)
-                                                    }
-                                                }
-                                                .padding(12.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                                modifier = Modifier.weight(1f)
-                                            ) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(40.dp)
-                                                        .clip(CircleShape)
-                                                        .background(SacredGold),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Icon(
-                                                        imageVector = if (currentPlayingUrl == realHumanAudioUrl && isAudioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                                                        contentDescription = null,
-                                                        tint = Color.White
-                                                    )
-                                                }
-                                                Column {
-                                                    Text(
-                                                        text = if (lang == AppLanguage.EN) "Listen to Real Human Voice" else "Gerçek İnsan Sesinden Dinle",
-                                                        style = MaterialTheme.typography.titleSmall,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = MaterialTheme.colorScheme.primary
-                                                    )
-                                                    Text(
-                                                        text = if (lang == AppLanguage.EN) "Beautiful professional recitation (Full Chapter)" else "Harika ve huşu dolu profesyonel seslendirme (Tüm Bölüm)",
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                }
-                                            }
-                                            if (currentPlayingUrl == realHumanAudioUrl && isAudioLoading) {
-                                                CircularProgressIndicator(
-                                                    color = SacredGold,
-                                                    modifier = Modifier.size(24.dp),
-                                                    strokeWidth = 2.dp
-                                                )
-                                            }
-                                        }
-                                    }
+                                    // Real Human Audio player section removed from Bible and Torah screen
                                 }
                             }
                         }
@@ -884,7 +897,7 @@ fun BibleReaderView(
                                             )
                                         }
 
-                                        // Actions: Note & Audio Play
+                                        // Actions: Note Play (Audio Play removed)
                                         Row(
                                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                                             verticalAlignment = Alignment.CenterVertically
@@ -902,44 +915,6 @@ fun BibleReaderView(
                                                     tint = MaterialTheme.colorScheme.primary,
                                                     modifier = Modifier.size(20.dp)
                                                 )
-                                            }
-
-                                            IconButton(
-                                                onClick = {
-                                                    if (isVersePlaying) {
-                                                        if (isAudioPlaying) {
-                                                            viewModel.togglePlayPause()
-                                                        } else {
-                                                            val audioUrl = viewModel.getBibleVerseAudioUrl(
-                                                                text = paragraphText,
-                                                                isEnglish = isEnglish
-                                                            )
-                                                            viewModel.playAudio(audioUrl, index)
-                                                        }
-                                                    } else {
-                                                        val audioUrl = viewModel.getBibleVerseAudioUrl(
-                                                            text = paragraphText,
-                                                            isEnglish = isEnglish
-                                                        )
-                                                        viewModel.playAudio(audioUrl, index)
-                                                    }
-                                                },
-                                                modifier = Modifier.size(36.dp)
-                                            ) {
-                                                if (isVersePlaying && isAudioLoading) {
-                                                    CircularProgressIndicator(
-                                                        color = SacredGold,
-                                                        modifier = Modifier.size(16.dp),
-                                                        strokeWidth = 2.dp
-                                                    )
-                                                } else {
-                                                    Icon(
-                                                        imageVector = if (isVersePlaying && isAudioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                                                        contentDescription = if (lang == AppLanguage.EN) "Listen" else "Dinle",
-                                                        tint = if (isVersePlaying) SacredGold else MaterialTheme.colorScheme.primary,
-                                                        modifier = Modifier.size(22.dp)
-                                                    )
-                                                }
                                             }
                                         }
                                     }
@@ -1213,9 +1188,21 @@ fun BibleReaderView(
                                                 val contemplationNum = contemplationInput.toIntOrNull() ?: 0
                                                 viewModel.updateReadingSessionProgress(
                                                     bookTitle = if (lang == AppLanguage.EN) {
-                                                        if (isTorah) "Torah" else "Gospel"
+                                                        when (book.id) {
+                                                            "torah" -> "Torah"
+                                                            "sermon" -> "Gospel"
+                                                            "talmud" -> "Talmud"
+                                                            "bukhari" -> "Sahih al-Bukhari"
+                                                            else -> "Scripture"
+                                                        }
                                                     } else {
-                                                        if (isTorah) "Tevrat" else "İncil"
+                                                        when (book.id) {
+                                                            "torah" -> "Tevrat"
+                                                            "sermon" -> "İncil"
+                                                            "talmud" -> "Talmud"
+                                                            "bukhari" -> "Sahih-i Buharî"
+                                                            else -> "Kutsal Metin"
+                                                        }
                                                     },
                                                     subtitle = if (lang == AppLanguage.EN) {
                                                         "$displaySection$displayChapter ($pagesNum pages)"
@@ -1240,115 +1227,6 @@ fun BibleReaderView(
                                         }
                                     }
                                 }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Persistent Audio Footer Control Bar
-            AnimatedVisibility(
-                visible = currentPlayingUrl != null,
-                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-                modifier = Modifier.align(Alignment.BottomCenter)
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(80.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    tonalElevation = 8.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .background(SacredGold.copy(alpha = 0.2f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Headphones,
-                                    contentDescription = null,
-                                    tint = SacredGold
-                                )
-                            }
-
-                                Column {
-                                    Text(
-                                        text = if (lang == AppLanguage.EN) {
-                                            "${currentSelectedBook?.nameEnglish ?: "Bible"} Book"
-                                        } else {
-                                            "${currentSelectedBook?.nameTurkish ?: "Kutsal Kitap"}"
-                                        },
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = if (activePlayingVerseIndex == -1) {
-                                            if (lang == AppLanguage.EN) {
-                                                "Listening to Professional Human Recitation..."
-                                            } else {
-                                                "Profesyonel İnsan Sesinden Dinleniyor..."
-                                            }
-                                        } else {
-                                            if (lang == AppLanguage.EN) {
-                                                "Reading Verse ${activePlayingVerseIndex?.plus(1) ?: 1}..."
-                                            } else {
-                                                "Ayet ${activePlayingVerseIndex?.plus(1) ?: 1} okunuyor..."
-                                            }
-                                        },
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                                    )
-                                }
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            // Pause / Play
-                            IconButton(
-                                onClick = { viewModel.togglePlayPause() },
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary)
-                            ) {
-                                Icon(
-                                    imageVector = if (isAudioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                                    contentDescription = if (lang == AppLanguage.EN) "Play/Pause" else "Oynat/Duraklat",
-                                    tint = MaterialTheme.colorScheme.onPrimary
-                                )
-                            }
-
-                            // Stop
-                            IconButton(
-                                onClick = { viewModel.stopAudio() },
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.errorContainer)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Stop,
-                                    contentDescription = if (lang == AppLanguage.EN) "Stop" else "Durdur",
-                                    tint = MaterialTheme.colorScheme.onErrorContainer
-                                )
                             }
                         }
                     }

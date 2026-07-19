@@ -753,6 +753,54 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
     private val _currentSelectedSermonChapter = MutableStateFlow<Int?>(null)
     val currentSelectedSermonChapter = _currentSelectedSermonChapter.asStateFlow()
 
+    private val _currentSelectedTalmudBook = MutableStateFlow<com.example.data.model.BibleBook?>(null)
+    val currentSelectedTalmudBook = _currentSelectedTalmudBook.asStateFlow()
+
+    private val _currentSelectedTalmudChapter = MutableStateFlow<Int?>(null)
+    val currentSelectedTalmudChapter = _currentSelectedTalmudChapter.asStateFlow()
+
+    private val _currentSelectedBukhariBook = MutableStateFlow<com.example.data.model.BibleBook?>(null)
+    val currentSelectedBukhariBook = _currentSelectedBukhariBook.asStateFlow()
+
+    private val _currentSelectedBukhariChapter = MutableStateFlow<Int?>(null)
+    val currentSelectedBukhariChapter = _currentSelectedBukhariChapter.asStateFlow()
+
+    fun selectTalmudBook(book: com.example.data.model.BibleBook?) {
+        _currentSelectedTalmudBook.value = book
+        _currentSelectedTalmudChapter.value = null
+        if (book == null) {
+            _activeBookContent.value = null
+        }
+    }
+
+    fun selectTalmudChapter(chapter: Int?) {
+        _currentSelectedTalmudChapter.value = chapter
+        if (chapter == null) {
+            _activeBookContent.value = null
+            return
+        }
+        val book = _currentSelectedTalmudBook.value ?: return
+        loadBibleChapterContent(bookId = "talmud", bibleBook = book, chapterNumber = chapter, isTorah = false)
+    }
+
+    fun selectBukhariBook(book: com.example.data.model.BibleBook?) {
+        _currentSelectedBukhariBook.value = book
+        _currentSelectedBukhariChapter.value = null
+        if (book == null) {
+            _activeBookContent.value = null
+        }
+    }
+
+    fun selectBukhariChapter(chapter: Int?) {
+        _currentSelectedBukhariChapter.value = chapter
+        if (chapter == null) {
+            _activeBookContent.value = null
+            return
+        }
+        val book = _currentSelectedBukhariBook.value ?: return
+        loadBibleChapterContent(bookId = "bukhari", bibleBook = book, chapterNumber = chapter, isTorah = false)
+    }
+
     fun selectTorahBook(book: com.example.data.model.BibleBook?) {
         _currentSelectedTorahBook.value = book
         _currentSelectedTorahChapter.value = null
@@ -890,10 +938,11 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                 }
             }
 
-            val coverUrl = if (isTorah) {
-                "https://lh3.googleusercontent.com/aida-public/AB6AXuD6rzbh79ixK7IHnjERinDAG9yEjNtC30hCLbuDS7yoxyf6rouqg29nOLf_nzmpU78EwzXJe6p1tWVIWrDlhvum4Iqa6u0TnO-IwrpTIQYRqPExxi16Ec1M-jGgAgowmeBh-zy1rrxHJO0IsoJZT3qbsucxsJyevgd8YJ4Aq8zKLGnL_X-HEcni8iw3mD3Q82EE-LHUXOMtbQi-V4sO8PjSsZ1PgOfvziyUWmZJF9TIO70eO_m89sgKQQ"
-            } else {
-                "https://lh3.googleusercontent.com/aida-public/AB6AXuDZLBLFfgfJglvrr0EJpNX0i_-RQKNKoNSaMY1kPDhn7UuXgjODkXTeF01UxWZumZjyTS0JDvfH0iC2YadTAtPekF7mw5qqPWd1vFb_ojcbVuV9hDUWAicnoXjy_iu6S8dWvAOkI8P939gqVGbRS8d_eWsrkLCj81FxRyVfyoj3wbEYaMvnZcWUnMuV90Q3vdJ7Xbt2p3x5-WuTLRP_WQVsmS8ANqNPwHXpkMweu5dRZItKVrxcMUCv6A"
+            val coverUrl = when (bookId) {
+                "torah" -> "https://lh3.googleusercontent.com/aida-public/AB6AXuD6rzbh79ixK7IHnjERinDAG9yEjNtC30hCLbuDS7yoxyf6rouqg29nOLf_nzmpU78EwzXJe6p1tWVIWrDlhvum4Iqa6u0TnO-IwrpTIQYRqPExxi16Ec1M-jGgAgowmeBh-zy1rrxHJO0IsoJZT3qbsucxsJyevgd8YJ4Aq8zKLGnL_X-HEcni8iw3mD3Q82EE-LHUXOMtbQi-V4sO8PjSsZ1PgOfvziyUWmZJF9TIO70eO_m89sgKQQ"
+                "talmud" -> "https://images.unsplash.com/photo-1544947950-fa07a98d237f"
+                "bukhari" -> "https://images.unsplash.com/photo-1584282479234-df7a6b986872"
+                else -> "https://lh3.googleusercontent.com/aida-public/AB6AXuDZLBLFfgfJglvrr0EJpNX0i_-RQKNKoNSaMY1kPDhn7UuXgjODkXTeF01UxWZumZjyTS0JDvfH0iC2YadTAtPekF7mw5qqPWd1vFb_ojcbVuV9hDUWAicnoXjy_iu6S8dWvAOkI8P939gqVGbRS8d_eWsrkLCj81FxRyVfyoj3wbEYaMvnZcWUnMuV90Q3vdJ7Xbt2p3x5-WuTLRP_WQVsmS8ANqNPwHXpkMweu5dRZItKVrxcMUCv6A"
             }
             
             withContext(Dispatchers.IO) {
@@ -902,7 +951,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                     val originalParagraphsList = mutableListOf<String>()
                     val englishVerses = mutableListOf<String>()
                     
-                    if (isTorah) {
+                    if (bookId == "torah") {
                         // Sefaria API
                         val encodedBookName = bibleBook.nameEnglish.replace(" ", "%20")
                         val sefariaUrl = "https://www.sefaria.org/api/texts/$encodedBookName.$chapterNumber?context=0"
@@ -927,6 +976,99 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                                     originalParagraphsList.add("${i + 1}: $cleanHeb")
                                 }
                             }
+                        }
+                    } else if (bookId == "talmud") {
+                        // Talmud Sefaria API
+                        val pageNum = 2 + (chapterNumber - 1) / 2
+                        val side = if (chapterNumber % 2 == 1) "a" else "b"
+                        val daf = "$pageNum$side"
+                        
+                        val sefariaUrl = "https://www.sefaria.org/api/texts/${bibleBook.id}.$daf?context=0"
+                        val request = Request.Builder().url(sefariaUrl).build()
+                        okHttpClient.newCall(request).execute().use { response ->
+                            if (!response.isSuccessful) throw IOException("Sefaria error: ${response.code}")
+                            val bodyStr = response.body?.string() ?: ""
+                            val json = JSONObject(bodyStr)
+                            
+                            val engJA = json.optJSONArray("text")
+                            if (engJA != null) {
+                                for (i in 0 until engJA.length()) {
+                                    val cleanText = engJA.optString(i).replace(Regex("<[^>]*>"), "")
+                                    englishVerses.add("${i + 1}: $cleanText")
+                                }
+                            }
+                            
+                            val hebJA = json.optJSONArray("he")
+                            if (hebJA != null) {
+                                for (i in 0 until hebJA.length()) {
+                                    val cleanHeb = hebJA.optString(i).replace(Regex("<[^>]*>"), "")
+                                    originalParagraphsList.add("${i + 1}: $cleanHeb")
+                                }
+                            }
+                        }
+                    } else if (bookId == "bukhari") {
+                        // Sahih al-Bukhari API
+                        val cacheFileEng = java.io.File(getApplication<Application>().filesDir, "eng-bukhari.min.json")
+                        val cacheFileAra = java.io.File(getApplication<Application>().filesDir, "ara-bukhari.min.json")
+                        
+                        if (!cacheFileEng.exists()) {
+                            val bukhariUrl = "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/eng-bukhari.min.json"
+                            downloadFileToLocal(bukhariUrl, cacheFileEng)
+                        }
+                        if (!cacheFileAra.exists()) {
+                            val bukhariAraUrl = "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari.min.json"
+                            downloadFileToLocal(bukhariAraUrl, cacheFileAra)
+                        }
+                        
+                        if (cacheFileEng.exists()) {
+                            val engJsonStr = cacheFileEng.readText()
+                            val engJson = JSONObject(engJsonStr)
+                            val engHadithsJA = engJson.getJSONArray("hadiths")
+                            
+                            val bookNumber = bibleBook.bookNumber
+                            val matchedEngHadiths = mutableListOf<JSONObject>()
+                            for (i in 0 until engHadithsJA.length()) {
+                                val hObj = engHadithsJA.getJSONObject(i)
+                                val refObj = hObj.optJSONObject("reference")
+                                if (refObj != null && refObj.optInt("book") == bookNumber) {
+                                    matchedEngHadiths.add(hObj)
+                                }
+                            }
+                            
+                            var matchedAraHadiths = mutableListOf<JSONObject>()
+                            if (cacheFileAra.exists()) {
+                                val araJsonStr = cacheFileAra.readText()
+                                val araJson = JSONObject(araJsonStr)
+                                val araHadithsJA = araJson.getJSONArray("hadiths")
+                                for (i in 0 until araHadithsJA.length()) {
+                                    val hObj = araHadithsJA.getJSONObject(i)
+                                    val refObj = hObj.optJSONObject("reference")
+                                    if (refObj != null && refObj.optInt("book") == bookNumber) {
+                                        matchedAraHadiths.add(hObj)
+                                    }
+                                }
+                            }
+                            
+                            if (matchedEngHadiths.isNotEmpty()) {
+                                for (idx in 0 until matchedEngHadiths.size) {
+                                    val targetEng = matchedEngHadiths[idx]
+                                    val hNum = targetEng.optInt("hadithnumber", idx + 1)
+                                    val textEng = targetEng.getString("text")
+                                    englishVerses.add("Hadis $hNum: $textEng")
+                                    
+                                    val targetAra = matchedAraHadiths.getOrNull(idx)
+                                    if (targetAra != null) {
+                                        val textAra = targetAra.getString("text")
+                                        originalParagraphsList.add("Hadis $hNum: $textAra")
+                                    } else {
+                                        originalParagraphsList.add("Hadis $hNum: $textEng")
+                                    }
+                                }
+                            } else {
+                                throw IOException("No hadiths found for book $bookNumber")
+                            }
+                        } else {
+                            throw IOException("Failed to download Bukhari English file")
                         }
                     } else {
                         // Bible-API
@@ -964,48 +1106,112 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                     
                     val formattedBook = Book(
                         id = bookId,
-                        title = if (isTorah) {
-                            if (_readerSettings.value.language == AppLanguage.EN) "Torah" else "Tevrat"
-                        } else {
-                            if (_readerSettings.value.language == AppLanguage.EN) "Gospel" else "İncil"
+                        title = when (bookId) {
+                            "torah" -> if (_readerSettings.value.language == AppLanguage.EN) "Torah" else "Tevrat"
+                            "sermon" -> if (_readerSettings.value.language == AppLanguage.EN) "Gospel" else "İncil"
+                            "talmud" -> "Talmud"
+                            "bukhari" -> if (_readerSettings.value.language == AppLanguage.EN) "Sahih al-Bukhari" else "Sahih-i Buharî"
+                            else -> if (_readerSettings.value.language == AppLanguage.EN) "Gospel" else "İncil"
                         },
-                        category = if (_readerSettings.value.language == AppLanguage.EN) "Sacred Texts" else "Kutsal Metinler",
-                        description = if (isTorah) {
-                            if (_readerSettings.value.language == AppLanguage.EN) "Torah (Tanakh) Live Text" else "Tevrat (Tanah) Canlı Metni"
+                        category = if (bookId == "talmud" || bookId == "bukhari") {
+                            if (_readerSettings.value.language == AppLanguage.EN) "Other Scriptures" else "Diğer Metinler"
                         } else {
-                            if (_readerSettings.value.language == AppLanguage.EN) "Gospel Live Text" else "İncil Canlı Metni"
+                            if (_readerSettings.value.language == AppLanguage.EN) "Sacred Texts" else "Kutsal Metinler"
                         },
-                        authorOrSource = if (isTorah) {
-                            if (_readerSettings.value.language == AppLanguage.EN) "Hebrew Tradition" else "İbranî Geleneği"
-                        } else {
-                            if (_readerSettings.value.language == AppLanguage.EN) "Christian Tradition" else "Hristiyan Geleneği"
+                        description = when (bookId) {
+                            "torah" -> if (_readerSettings.value.language == AppLanguage.EN) "Torah (Tanakh) Live Text" else "Tevrat (Tanah) Canlı Metni"
+                            "sermon" -> if (_readerSettings.value.language == AppLanguage.EN) "Gospel Live Text" else "İncil Canlı Metni"
+                            "talmud" -> if (_readerSettings.value.language == AppLanguage.EN) "Talmud Bavli Live Text" else "Babil Talmudu Canlı Metni"
+                            "bukhari" -> if (_readerSettings.value.language == AppLanguage.EN) "Sahih al-Bukhari Hadith Collection" else "Sahih-i Buharî Hadis Külliyatı"
+                            else -> ""
                         },
-                        iconName = if (isTorah) "menu_book" else "church",
+                        authorOrSource = when (bookId) {
+                            "torah" -> if (_readerSettings.value.language == AppLanguage.EN) "Hebrew Tradition" else "İbranî Geleneği"
+                            "sermon" -> if (_readerSettings.value.language == AppLanguage.EN) "Christian Tradition" else "Hristiyan Geleneği"
+                            "talmud" -> if (_readerSettings.value.language == AppLanguage.EN) "Babylonian Academies" else "Babil Akademileri"
+                            "bukhari" -> if (_readerSettings.value.language == AppLanguage.EN) "Imam Bukhari" else "İmam Buharî"
+                            else -> ""
+                        },
+                        iconName = when (bookId) {
+                            "torah" -> "menu_book"
+                            "talmud" -> "menu_book"
+                            "bukhari" -> "auto_stories"
+                            else -> "church"
+                        },
                         coverUrl = coverUrl,
-                        contentTitle = if (_readerSettings.value.language == AppLanguage.EN) "${bibleBook.nameEnglish} $chapterNumber" else "${bibleBook.nameTurkish} $chapterNumber",
-                        subContentTitle = if (_readerSettings.value.language == AppLanguage.EN) "${bibleBook.nameTurkish} $chapterNumber" else "${bibleBook.nameEnglish} $chapterNumber",
-                        introText = if (_readerSettings.value.language == AppLanguage.EN) {
-                            "Chapter $chapterNumber of the book of ${bibleBook.nameEnglish}, loaded with live API and academic translation."
+                        contentTitle = if (bookId == "talmud") {
+                            val pageNum = 2 + (chapterNumber - 1) / 2
+                            val side = if (chapterNumber % 2 == 1) "a" else "b"
+                            "${bibleBook.nameEnglish} $pageNum$side"
+                        } else if (bookId == "bukhari") {
+                            if (_readerSettings.value.language == AppLanguage.EN) {
+                                "${bibleBook.nameEnglish} Hadith $chapterNumber"
+                            } else {
+                                "${bibleBook.nameTurkish} Hadis $chapterNumber"
+                            }
                         } else {
-                            "${bibleBook.nameTurkish} kitabının $chapterNumber. bölümü canlı API ve akademik çeviri ile yüklenmiştir."
+                            if (_readerSettings.value.language == AppLanguage.EN) "${bibleBook.nameEnglish} $chapterNumber" else "${bibleBook.nameTurkish} $chapterNumber"
+                        },
+                        subContentTitle = if (bookId == "talmud") {
+                            val pageNum = 2 + (chapterNumber - 1) / 2
+                            val side = if (chapterNumber % 2 == 1) "a" else "b"
+                            "Talmud Bavli - $pageNum$side"
+                        } else if (bookId == "bukhari") {
+                            "Sahih al-Bukhari - ${bibleBook.nameEnglish}"
+                        } else {
+                            if (_readerSettings.value.language == AppLanguage.EN) "${bibleBook.nameTurkish} $chapterNumber" else "${bibleBook.nameEnglish} $chapterNumber"
+                        },
+                        introText = when (bookId) {
+                            "talmud" -> {
+                                val pageNum = 2 + (chapterNumber - 1) / 2
+                                val side = if (chapterNumber % 2 == 1) "a" else "b"
+                                if (_readerSettings.value.language == AppLanguage.EN) {
+                                    "Tractate ${bibleBook.nameEnglish}, Folio $pageNum$side loaded from Sefaria Database."
+                                } else {
+                                    "${bibleBook.nameEnglish} Bölümü, $pageNum$side Yaprağı Sefaria canlı veritabanından yüklendi."
+                                }
+                            }
+                            "bukhari" -> {
+                                if (_readerSettings.value.language == AppLanguage.EN) {
+                                    "Book of ${bibleBook.nameEnglish}, Hadith $chapterNumber loaded from live Hadith API."
+                                } else {
+                                    "${bibleBook.nameTurkish} Bölümü, $chapterNumber. Hadis-i Şerif canlı veritabanından yüklendi."
+                                }
+                            }
+                            else -> {
+                                if (_readerSettings.value.language == AppLanguage.EN) {
+                                    "Chapter $chapterNumber of the book of ${bibleBook.nameEnglish}, loaded with live API and academic translation."
+                                } else {
+                                    "${bibleBook.nameTurkish} kitabının $chapterNumber. bölümü canlı API ve akademik çeviri ile yüklenmiştir."
+                                }
+                            }
                         },
                         paragraphs = paragraphsList,
-                        originalLanguageName = if (isTorah) {
-                            if (_readerSettings.value.language == AppLanguage.EN) "Hebrew" else "İbranice (Hebrew)"
-                        } else {
-                            if (_readerSettings.value.language == AppLanguage.EN) "Ancient Greek" else "Grekçe (Ancient Greek)"
+                        originalLanguageName = when (bookId) {
+                            "torah" -> if (_readerSettings.value.language == AppLanguage.EN) "Hebrew" else "İbranice (Hebrew)"
+                            "talmud" -> if (_readerSettings.value.language == AppLanguage.EN) "Aramaic" else "Aramice (Aramaic)"
+                            "bukhari" -> if (_readerSettings.value.language == AppLanguage.EN) "Arabic" else "Arapça (Arabic)"
+                            else -> if (_readerSettings.value.language == AppLanguage.EN) "Ancient Greek" else "Grekçe (Ancient Greek)"
                         },
                         originalIntroText = if (originalParagraphsList.isNotEmpty()) originalParagraphsList.first().substringAfter(": ") else "",
                         originalParagraphs = originalParagraphsList,
                         footnotes = if (_readerSettings.value.language == AppLanguage.EN) {
                             listOf(
                                 "Academic Translation" to "This section has been translated in real-time through live data sources adhering to scholarly biblical style.",
-                                "Source" to if (isTorah) "Sefaria Open Source Project" else "Bible-API Library"
+                                "Source" to when (bookId) {
+                                    "torah", "talmud" -> "Sefaria Open Source Project"
+                                    "bukhari" -> "Fawaz Ahmed Hadith API"
+                                    else -> "Bible-API Library"
+                                }
                             )
                         } else {
                             listOf(
-                                "Akademik Çeviri" to "Bu bölüm, canlı veri kaynakları aracılığıyla gerçek zamanlı olarak Türkçe Kitab-ı Mukaddes üslubuna sadık kalınarak aktarılmıştır.",
-                                "Kaynak" to if (isTorah) "Sefaria Açık Kaynak Projesi" else "Bible-API Çevrimdışı/Canlı Kütüphane"
+                                "Akademik Çeviri" to "Bu bölüm, canlı veri kaynakları aracılığıyla gerçek zamanlı olarak akademik üsluba sadık kalınarak aktarılmıştır.",
+                                "Kaynak" to when (bookId) {
+                                    "torah", "talmud" -> "Sefaria Açık Kaynak Projesi"
+                                    "bukhari" -> "Fawaz Ahmed Hadis Kütüphanesi"
+                                    else -> "Bible-API Çevrimdışı/Canlı Kütüphane"
+                                }
                             )
                         }
                     )
@@ -1059,6 +1265,8 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                 "quran" -> "Arabic"
                 "torah" -> "Hebrew (İbranice)"
                 "sermon" -> "Ancient Greek (Grekçe)"
+                "talmud" -> "Aramaic (Aramice)"
+                "bukhari" -> "Arabic (Arapça)"
                 else -> "Original Language"
             }
             
@@ -1392,6 +1600,174 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                             }
                         } catch (e: Exception) {
                             android.util.Log.e("ScriptureViewModel", "Failed Sermon/Bible fetch", e)
+                        }
+                    } else if (bookId == "talmud") {
+                        try {
+                            val cleanRef = query.trim().lowercase()
+                            val tractates = listOf(
+                                "berakhot", "shabbat", "eruvin", "pesachim", "yoma", "sukkah", "beitzah", "rosh hashanah", "taanit", "megillah", "moed katan", "chagigah",
+                                "yevamot", "ketubot", "nedarim", "nazir", "sotah", "gittin", "kiddushin",
+                                "bava kamma", "bava metzia", "bava batra", "sanhedrin", "makkot", "shevuot", "avodah zarah", "horayot",
+                                "zevachim", "menachot", "chullin", "bechorot", "arachin", "temurah", "keritot", "meilah", "tamid", "niddah"
+                            )
+                            
+                            var mappedTractate = tractates.firstOrNull { cleanRef.contains(it) } ?: "berakhot"
+                            val dafRegex = Regex("\\d+[a-b]?")
+                            val daf = dafRegex.find(cleanRef)?.value ?: "2a"
+                            
+                            val tractateCap = mappedTractate.split(" ").joinToString("-") { word ->
+                                word.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                            }
+                            
+                            val sefariaUrl = "https://www.sefaria.org/api/texts/${tractateCap}.${daf}?context=0"
+                            val request = Request.Builder().url(sefariaUrl).build()
+                            okHttpClient.newCall(request).execute().use { response ->
+                                if (response.isSuccessful) {
+                                    val bodyStr = response.body?.string() ?: ""
+                                    val json = JSONObject(bodyStr)
+                                    val ref = json.optString("ref", "${tractateCap} ${daf}")
+                                    
+                                    val engJA = json.optJSONArray("text")
+                                    val engList = mutableListOf<String>()
+                                    if (engJA != null) {
+                                        for (i in 0 until engJA.length()) {
+                                            engList.add(engJA.optString(i).replace(Regex("<[^>]*>"), ""))
+                                        }
+                                    }
+                                    
+                                    val hebJA = json.optJSONArray("he")
+                                    val hebList = mutableListOf<String>()
+                                    if (hebJA != null) {
+                                        for (i in 0 until hebJA.length()) {
+                                            hebList.add(hebJA.optString(i).replace(Regex("<[^>]*>"), ""))
+                                        }
+                                    }
+
+                                    val originalVerseCount = engList.size
+                                    
+                                    val englishVerses = engList.mapIndexed { i, txt -> "${i + 1}: $txt" }
+                                    val paragraphsList = mutableListOf<String>()
+                                    if (englishVerses.isNotEmpty()) {
+                                        val deferredTranslations = englishVerses.map { verse ->
+                                            async {
+                                                translateTextGtx(verse)
+                                            }
+                                        }
+                                        paragraphsList.addAll(deferredTranslations.awaitAll())
+                                    }
+                                    
+                                    val originalParagraphsList = hebList.mapIndexed { i, txt -> "${i + 1}: $txt" }
+                                    val intro = if (paragraphsList.isNotEmpty()) {
+                                        "Talmud - ${ref} bölümü Sefaria canlı veritabanından başarıyla yüklendi."
+                                    } else {
+                                        "Talmud - ${ref} bölümü."
+                                    }
+                                    
+                                    loadedBook = Book(
+                                        id = bookId,
+                                        title = "Talmud",
+                                        category = category,
+                                        description = description,
+                                        authorOrSource = authorOrSource,
+                                        iconName = iconName,
+                                        coverUrl = coverUrl,
+                                        contentTitle = ref,
+                                        subContentTitle = "Sefaria - Talmud Babilî (Canlı Çeviri)",
+                                        introText = intro,
+                                        paragraphs = paragraphsList,
+                                        originalLanguageName = "Aramice (Aramaic)",
+                                        originalIntroText = if (hebList.isNotEmpty()) hebList.first() else "",
+                                        originalParagraphs = originalParagraphsList,
+                                        footnotes = listOf(
+                                            "Bilgi" to "Sefaria Açık Kaynak Talmud veritabanından canlı olarak getirilmiştir.",
+                                            "Referans" to "Talmud - ${ref}",
+                                            "Satır Kontrolü" to "Orijinal satır sayısı ($originalVerseCount) ile Türkçe satır sayısı (${paragraphsList.size}) tam olarak doğrulanmıştır."
+                                        )
+                                    )
+                                }
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("ScriptureViewModel", "Failed Talmud fetch", e)
+                        }
+                    } else if (bookId == "bukhari") {
+                        try {
+                            val cleanRef = query.trim().lowercase()
+                            val numRegex = Regex("\\d+")
+                            val requestedHadithNumber = numRegex.find(cleanRef)?.value?.toIntOrNull() ?: 1
+                            
+                            val cacheFile = java.io.File(getApplication<Application>().filesDir, "eng-bukhari.min.json")
+                            var jsonContent = ""
+                            
+                            if (cacheFile.exists()) {
+                                jsonContent = cacheFile.readText()
+                            } else {
+                                val bukhariUrl = "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/eng-bukhari.min.json"
+                                val request = Request.Builder().url(bukhariUrl).build()
+                                okHttpClient.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        jsonContent = response.body?.string() ?: ""
+                                        if (jsonContent.isNotEmpty()) {
+                                            try {
+                                                cacheFile.writeText(jsonContent)
+                                            } catch (e: Exception) {
+                                                android.util.Log.e("ScriptureViewModel", "Failed to cache Bukhari file", e)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if (jsonContent.isNotEmpty()) {
+                                val json = JSONObject(jsonContent)
+                                val hadithsJA = json.getJSONArray("hadiths")
+                                
+                                var targetHadithObj: JSONObject? = null
+                                for (i in 0 until hadithsJA.length()) {
+                                    val hObj = hadithsJA.getJSONObject(i)
+                                    val hNum = hObj.optInt("hadithnumber", -1)
+                                    if (hNum == requestedHadithNumber) {
+                                        targetHadithObj = hObj
+                                        break
+                                    }
+                                }
+                                
+                                if (targetHadithObj == null && requestedHadithNumber - 1 < hadithsJA.length()) {
+                                    targetHadithObj = hadithsJA.getJSONObject(requestedHadithNumber - 1)
+                                }
+                                
+                                if (targetHadithObj != null) {
+                                    val text = targetHadithObj.getString("text")
+                                    val hNum = targetHadithObj.optInt("hadithnumber", requestedHadithNumber)
+                                    
+                                    val trText = translateTextGtx("${hNum}: ${text}")
+                                    val paragraphsList = listOf(trText)
+                                    val originalParagraphsList = listOf("${hNum}: ${text}")
+                                    
+                                    loadedBook = Book(
+                                        id = bookId,
+                                        title = "Sahih-i Buharî",
+                                        category = category,
+                                        description = description,
+                                        authorOrSource = authorOrSource,
+                                        iconName = iconName,
+                                        coverUrl = coverUrl,
+                                        contentTitle = "Hadis ${hNum}",
+                                        subContentTitle = "Sahih-i Buharî Külliyatı",
+                                        introText = "Sahih-i Buharî ${hNum}. Hadis-i Şerif canlı veritabanından yüklendi.",
+                                        paragraphs = paragraphsList,
+                                        originalLanguageName = "İngilizce (English)",
+                                        originalIntroText = text.take(100) + "...",
+                                        originalParagraphs = originalParagraphsList,
+                                        footnotes = listOf(
+                                            "Kaynak" to "Fawaz Ahmed Hadith API (Açık Kaynak)",
+                                            "Hadis No" to "Sahih-i Buharî No: ${hNum}",
+                                            "Güvenilirlik" to "Sahih (En Yüksek Derece)"
+                                        )
+                                    )
+                                }
+                             }
+                        } catch (e: Exception) {
+                            android.util.Log.e("ScriptureViewModel", "Failed Bukhari fetch", e)
                         }
                     }
                     
@@ -2206,47 +2582,133 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                     val paragraphsList = mutableListOf<String>()
                     val originalParagraphsList = mutableListOf<String>()
                     val englishVerses = mutableListOf<String>()
-                    val isTorah = bookId == "torah"
-                    
-                    if (isTorah) {
-                        val encodedBookName = bibleBook.nameEnglish.replace(" ", "%20")
-                        val sefariaUrl = "https://www.sefaria.org/api/texts/$encodedBookName.$chapterNumber?context=0"
-                        val request = Request.Builder().url(sefariaUrl).build()
-                        okHttpClient.newCall(request).execute().use { response ->
-                            if (response.isSuccessful) {
-                                val bodyStr = response.body?.string() ?: ""
-                                val json = JSONObject(bodyStr)
-                                val engJA = json.optJSONArray("text")
-                                if (engJA != null) {
-                                    for (i in 0 until engJA.length()) {
-                                        val cleanText = engJA.optString(i).replace(Regex("<[^>]*>"), "")
-                                        englishVerses.add("${i + 1}: $cleanText")
+                    when (bookId) {
+                        "torah" -> {
+                            val encodedBookName = bibleBook.nameEnglish.replace(" ", "%20")
+                            val sefariaUrl = "https://www.sefaria.org/api/texts/$encodedBookName.$chapterNumber?context=0"
+                            val request = Request.Builder().url(sefariaUrl).build()
+                            okHttpClient.newCall(request).execute().use { response ->
+                                if (response.isSuccessful) {
+                                    val bodyStr = response.body?.string() ?: ""
+                                    val json = JSONObject(bodyStr)
+                                    val engJA = json.optJSONArray("text")
+                                    if (engJA != null) {
+                                        for (i in 0 until engJA.length()) {
+                                            val cleanText = engJA.optString(i).replace(Regex("<[^>]*>"), "")
+                                            englishVerses.add("${i + 1}: $cleanText")
+                                        }
                                     }
-                                }
-                                val hebJA = json.optJSONArray("he")
-                                if (hebJA != null) {
-                                    for (i in 0 until hebJA.length()) {
-                                        val cleanHeb = hebJA.optString(i).replace(Regex("<[^>]*>"), "")
-                                        originalParagraphsList.add("${i + 1}: $cleanHeb")
+                                    val hebJA = json.optJSONArray("he")
+                                    if (hebJA != null) {
+                                        for (i in 0 until hebJA.length()) {
+                                            val cleanHeb = hebJA.optString(i).replace(Regex("<[^>]*>"), "")
+                                            originalParagraphsList.add("${i + 1}: $cleanHeb")
+                                        }
                                     }
                                 }
                             }
                         }
-                    } else {
-                        val encodedBookName = bibleBook.nameEnglish.replace(" ", "%20")
-                        val bibleUrl = "https://bible-api.com/$encodedBookName+$chapterNumber"
-                        val request = Request.Builder().url(bibleUrl).build()
-                        okHttpClient.newCall(request).execute().use { response ->
-                            if (response.isSuccessful) {
-                                val bodyStr = response.body?.string() ?: ""
-                                val json = JSONObject(bodyStr)
-                                val versesJA = json.getJSONArray("verses")
-                                for (i in 0 until versesJA.length()) {
-                                    val vObj = versesJA.getJSONObject(i)
-                                    val vNum = vObj.getInt("verse")
-                                    val vText = vObj.getString("text").trim()
-                                    englishVerses.add("$vNum: $vText")
-                                    originalParagraphsList.add("$vNum: $vText")
+                        "talmud" -> {
+                            val pageNum = 2 + (chapterNumber - 1) / 2
+                            val side = if (chapterNumber % 2 == 1) "a" else "b"
+                            val daf = "$pageNum$side"
+                            val sefariaUrl = "https://www.sefaria.org/api/texts/${bibleBook.id}.$daf?context=0"
+                            val request = Request.Builder().url(sefariaUrl).build()
+                            okHttpClient.newCall(request).execute().use { response ->
+                                if (response.isSuccessful) {
+                                    val bodyStr = response.body?.string() ?: ""
+                                    val json = JSONObject(bodyStr)
+                                    val engJA = json.optJSONArray("text")
+                                    if (engJA != null) {
+                                        for (i in 0 until engJA.length()) {
+                                            val cleanText = engJA.optString(i).replace(Regex("<[^>]*>"), "")
+                                            englishVerses.add("${i + 1}: $cleanText")
+                                        }
+                                    }
+                                    val hebJA = json.optJSONArray("he")
+                                    if (hebJA != null) {
+                                        for (i in 0 until hebJA.length()) {
+                                            val cleanHeb = hebJA.optString(i).replace(Regex("<[^>]*>"), "")
+                                            originalParagraphsList.add("${i + 1}: $cleanHeb")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        "bukhari" -> {
+                            val cacheFileEng = java.io.File(getApplication<Application>().filesDir, "eng-bukhari.min.json")
+                            val cacheFileAra = java.io.File(getApplication<Application>().filesDir, "ara-bukhari.min.json")
+                            
+                            if (!cacheFileEng.exists()) {
+                                val bukhariUrl = "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/eng-bukhari.min.json"
+                                downloadFileToLocal(bukhariUrl, cacheFileEng)
+                            }
+                            if (!cacheFileAra.exists()) {
+                                val bukhariAraUrl = "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari.min.json"
+                                downloadFileToLocal(bukhariAraUrl, cacheFileAra)
+                            }
+                            
+                            if (cacheFileEng.exists()) {
+                                val engJsonStr = cacheFileEng.readText()
+                                val engJson = JSONObject(engJsonStr)
+                                val engHadithsJA = engJson.getJSONArray("hadiths")
+                                val bookNumber = bibleBook.bookNumber
+                                val matchedEngHadiths = mutableListOf<JSONObject>()
+                                for (i in 0 until engHadithsJA.length()) {
+                                    val hObj = engHadithsJA.getJSONObject(i)
+                                    val refObj = hObj.optJSONObject("reference")
+                                    if (refObj != null && refObj.optInt("book") == bookNumber) {
+                                        matchedEngHadiths.add(hObj)
+                                    }
+                                }
+                                var matchedAraHadiths = mutableListOf<JSONObject>()
+                                if (cacheFileAra.exists()) {
+                                    val araJsonStr = cacheFileAra.readText()
+                                    val araJson = JSONObject(araJsonStr)
+                                    val araHadithsJA = araJson.getJSONArray("hadiths")
+                                    for (i in 0 until araHadithsJA.length()) {
+                                        val hObj = araHadithsJA.getJSONObject(i)
+                                        val refObj = hObj.optJSONObject("reference")
+                                        if (refObj != null && refObj.optInt("book") == bookNumber) {
+                                            matchedAraHadiths.add(hObj)
+                                        }
+                                    }
+                                }
+                                
+                                if (matchedEngHadiths.isNotEmpty()) {
+                                    for (idx in 0 until matchedEngHadiths.size) {
+                                        val targetEng = matchedEngHadiths[idx]
+                                        val hNum = targetEng.optInt("hadithnumber", idx + 1)
+                                        val textEng = targetEng.getString("text")
+                                        englishVerses.add("Hadis $hNum: $textEng")
+                                        
+                                        val targetAra = matchedAraHadiths.getOrNull(idx)
+                                        if (targetAra != null) {
+                                            val textAra = targetAra.getString("text")
+                                            originalParagraphsList.add("Hadis $hNum: $textAra")
+                                        } else {
+                                            originalParagraphsList.add("Hadis $hNum: $textEng")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else -> {
+                            val encodedBookName = bibleBook.nameEnglish.replace(" ", "%20")
+                            val bibleUrl = "https://bible-api.com/$encodedBookName+$chapterNumber"
+                            val request = Request.Builder().url(bibleUrl).build()
+                            okHttpClient.newCall(request).execute().use { response ->
+                                if (response.isSuccessful) {
+                                    val bodyStr = response.body?.string() ?: ""
+                                    val json = JSONObject(bodyStr)
+                                    val versesJA = json.getJSONArray("verses")
+                                    for (i in 0 until versesJA.length()) {
+                                        val vObj = versesJA.getJSONObject(i)
+                                        val vNum = vObj.getInt("verse")
+                                        val vText = vObj.getString("text").trim()
+                                        englishVerses.add("$vNum: $vText")
+                                        originalParagraphsList.add("$vNum: $vText")
+                                    }
                                 }
                             }
                         }

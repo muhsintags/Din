@@ -84,6 +84,57 @@ object BookRepository {
             originalIntroText = "Ἰδὼν δὲ toὺς ὄχλους ἀνέβη εἰς τὸ ὄρος·",
             originalParagraphs = SermonContent.originalParagraphs,
             audioUrl = "https://audio.wordproject.org/bibles/audio/20/40/5.mp3"
+        ),
+        Book(
+            id = "talmud",
+            title = "Talmud",
+            category = "Diğer Metinler",
+            description = "Yahudi sivil ve şer'î hukuk, gelenek ve felsefe tartışmaları kütüphanesi.",
+            authorOrSource = "Babil Akademileri",
+            iconName = "menu_book",
+            coverUrl = "https://images.unsplash.com/photo-1544947950-fa07a98d237f",
+            contentTitle = "Berakhot 2a",
+            subContentTitle = "Şema Vakitleri",
+            introText = "Talmud (Babil Talmudu, Berakhot 2a), akşam Şema dualarının okunma vakitleri ve hahamların kutsal metin tartışmalarıyla başlar.",
+            paragraphs = listOf(
+                "MİŞNA: Akşamları Şema ne zamandan itibaren okunabilir? Rahiplerin, arınma kurbanlarının ardından yemek yemek üzere içeri girdikleri saatten, birinci nöbetin sonuna kadar.",
+                "GEMARA: Bu hükmün dayanağı nedir? Tevrat'ta şöyle der: 'Yatarken ve kalkarken.' Akşam Şeması yatma vaktine karşılık gelir.",
+                "Hahamlar şöyle öğretirler: 'Yatarken' ifadesi yatakta olunan genel vakti belirtir, bu da akşama tekabül eder."
+            ),
+            originalLanguageName = "Aramice / İbranice",
+            originalIntroText = "מאימתי קורין את שמע בערבין? משעה שהכהנים נכנסים לאכול בתרומתן...",
+            originalParagraphs = listOf(
+                "מאימתי קורין את שמע בערבין משעה שהכהנים נכנסים לאכול בתרומתן עד סוף האשמורה הראשונה דברי רבי אליעזר",
+                "וחכמים אומרים עד חצות רבן גמליאל אומר עד שיעله עמוד השחר"
+            ),
+            footnotes = listOf(
+                "Mişna" to "Talmud'un çekirdeğini oluşturan, Yahudi sözlü kanunlarının ilk yazılı derlemesidir.",
+                "Gemara" to "Mişna üzerine yapılan geniş akademik ve teolojik tartışmaları içeren bölümdür."
+            )
+        ),
+        Book(
+            id = "bukhari",
+            title = "Sahih-i Buharî",
+            category = "Diğer Metinler",
+            description = "İslam dünyasında Kur'an'dan sonra en güvenilir kabul edilen hadis külliyatı.",
+            authorOrSource = "İmam Buharî",
+            iconName = "auto_stories",
+            coverUrl = "https://images.unsplash.com/photo-1584282479234-df7a6b986872",
+            contentTitle = "Hadis 1",
+            subContentTitle = "Vahyin Başlangıcı",
+            introText = "Sahih-i Buharî, ünlü niyet hadisi ile başlar: 'Ameller ancak niyetlere göredir...'",
+            paragraphs = listOf(
+                "1: Ömer bin el-Hattâb'dan (r.a.) nakledildiğine göre, o minberde iken şöyle demiştir: Resûlullah'ın (s.a.v.) şöyle buyurduğunu işittim: 'Ameller ancak niyetlere göredir. Herkes için ancak niyet ettiği şey vardır. Kimin hicreti Allah ve Resûlü için ise hicreti Allah ve Resûlü'nedir. Kimin de hicreti elde edeceği bir dünyalık veya evleneceği bir kadın için ise hicreti, hicret ettiği şeyedir.'"
+            ),
+            originalLanguageName = "Arapça (Arabic)",
+            originalIntroText = "حَدَّثَنَا الْحُمَيْدِيُّ عَبْدُ اللَّهِ بْنُ الزُّבَيْرِ، قَالَ حَدَّثَنَا سُفْيَانُ...",
+            originalParagraphs = listOf(
+                "إنما الأعمال بالنيات، وإنما لكل امرئ ما نوى، فمن كانت هجرته إلى الله ورسوله فهجرته إلى الله ورسوله، ومن كانت هجرته لدنيا يصيبها أو امرأة يتزوجها فهجرته إلى ما هاجر إليه"
+            ),
+            footnotes = listOf(
+                "Kaynak" to "İmam Buharî hadis külliyatı, Kitabu Bed'il-Vahy, 1. Hadis.",
+                "Hadis No" to "Hadis numarası 1'dir. Sahih derecesindedir."
+            )
         )
     )
 }

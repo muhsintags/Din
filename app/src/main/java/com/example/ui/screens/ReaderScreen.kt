@@ -53,7 +53,7 @@ fun ReaderScreen(
         return
     }
 
-    if (book.id == "torah" || book.id == "sermon") {
+    if (book.id == "torah" || book.id == "sermon" || book.id == "talmud" || book.id == "bukhari") {
         BibleReaderView(viewModel = viewModel, book = book, onNavigateBack = onNavigateBack)
         return
     }
@@ -752,6 +752,16 @@ fun ReaderScreen(
                                              )
                                          }
                                      }
+                                     "talmud" -> {
+                                         listOf(
+                                             "Berakhot", "Shabbat", "Eruvin", "Pesachim", "Yoma", "Sukkah", "Beitzah", "Rosh Hashanah", "Taanit", "Megillah", "Moed Katan", "Chagigah"
+                                         )
+                                     }
+                                     "bukhari" -> {
+                                         listOf(
+                                             "Hadith 1", "Hadith 15", "Hadith 42", "Hadith 100", "Hadith 200", "Hadith 500"
+                                         )
+                                     }
                                      else -> emptyList()
                                  }
 
@@ -780,6 +790,8 @@ fun ReaderScreen(
                                 val suggestions = when (book.id) {
                                     "torah" -> if (lang == AppLanguage.EN) listOf("Genesis 1", "Psalms 23", "Exodus 20") else listOf("Yaratılış 1", "Mezmurlar 23", "Çıkış 20")
                                     "sermon" -> if (lang == AppLanguage.EN) listOf("Matthew 5", "Matthew 6", "Matthew 7") else listOf("Matta 5", "Matta 6", "Matta 7")
+                                    "talmud" -> listOf("Berakhot 2a", "Shabbat 2a", "Megillah 2a")
+                                    "bukhari" -> listOf("Hadith 1", "Hadith 15", "Hadith 42")
                                     else -> if (lang == AppLanguage.EN) listOf("Chapter 1", "Chapter 2") else listOf("Bölüm 1", "Bölüm 2")
                                 }
 

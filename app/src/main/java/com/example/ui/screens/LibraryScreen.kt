@@ -119,6 +119,8 @@ fun LibraryScreen(
                         Column(modifier = Modifier.fillMaxWidth()) {
                             // Category Title Header
                             val categoryTranslated = when (category) {
+                                "Diğer Metinler" -> if (lang == AppLanguage.EN) "Other Scriptures" else "Diğer Metinler"
+                                "Kutsal Metinler" -> if (lang == AppLanguage.EN) "Holy Scriptures" else "Kutsal Metinler"
                                 "Kur'an-ı Kerim" -> Loc.get("quran", lang)
                                 "Kitab-ı Mukaddes" -> Loc.get("bible", lang)
                                 else -> category
