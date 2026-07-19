@@ -96,7 +96,9 @@ object Loc {
         "surah" to "Sure",
         "bible_promo_desc" to "Sefaria API entegrasyonu ile 24 ciltlik İbranice kutsal metinleri ve Kitab-ı Mukaddes dilindeki canlı akademik çevirileri tefekkür edin.",
         "select_bible_book" to "Kitab-ı Mukaddes Kitabı Seçin",
-        "search_bible_book" to "Kitap ara (örn: Matta, Yaratılış)..."
+        "search_bible_book" to "Kitap ara (örn: Matta, Yaratılış)...",
+        "talmud" to "Talmud (Babil Talmudu)",
+        "bukhari" to "Sahih-i Buharî"
     )
 
     private val en = mapOf(
@@ -190,7 +192,9 @@ object Loc {
         "surah" to "Surah",
         "bible_promo_desc" to "Contemplate on Hebrew sacred texts and academic Bible API translations with interactive bilingual viewing options.",
         "select_bible_book" to "Select Bible Book",
-        "search_bible_book" to "Search book (e.g., Matthew, Genesis)..."
+        "search_bible_book" to "Search book (e.g., Matthew, Genesis)...",
+        "talmud" to "Talmud (Babylonian)",
+        "bukhari" to "Sahih al-Bukhari"
     )
 
     fun get(key: String, lang: AppLanguage): String {
