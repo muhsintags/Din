@@ -18,6 +18,9 @@ interface ReadingHistoryDao {
     @Query("SELECT * FROM reading_histories WHERE bookTitle = :bookTitle LIMIT 1")
     suspend fun getHistoryByBookTitle(bookTitle: String): ReadingHistory?
 
+    @Query("SELECT * FROM reading_histories WHERE bookTitle = :bookTitle")
+    suspend fun getHistoryListByBookTitle(bookTitle: String): List<ReadingHistory>
+
     @Query("DELETE FROM reading_histories WHERE id = :id")
     suspend fun deleteHistoryById(id: Int)
 

@@ -1,14 +1,14 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoStories
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -171,27 +171,13 @@ fun LibraryScreen(
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                                         ) {
-                                            // Soft book cover
-                                            Box(
+                                            // Soft book cover (2D flat elegant design)
+                                            ScriptureBookCover(
+                                                bookId = book.id,
                                                 modifier = Modifier
                                                     .width(60.dp)
                                                     .height(84.dp)
-                                                    .clip(RoundedCornerShape(4.dp))
-                                                    .background(MaterialTheme.colorScheme.secondaryContainer)
-                                            ) {
-                                                val coverModel: Any = when (book.id) {
-                                                    "quran" -> com.Muhsin.kutuphane.R.drawable.img_quran_cover
-                                                    "torah" -> com.Muhsin.kutuphane.R.drawable.img_torah_cover
-                                                    "sermon" -> com.Muhsin.kutuphane.R.drawable.img_bible_cover
-                                                    else -> book.coverUrl
-                                                }
-                                                AsyncImage(
-                                                    model = coverModel,
-                                                    contentDescription = bookTitle,
-                                                    modifier = Modifier.fillMaxSize(),
-                                                    contentScale = ContentScale.Crop
-                                                )
-                                            }
+                                            )
 
                                             // Text description + button column
                                             Column(
@@ -254,3 +240,91 @@ fun LibraryScreen(
         }
     }
 }
+
+@Composable
+fun ScriptureBookCover(bookId: String, modifier: Modifier = Modifier) {
+    val (gradient, icon, iconColor, label) = when (bookId) {
+        "quran" -> Quadruple(
+            androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color(0xFF0F5A32), androidx.compose.ui.graphics.Color(0xFF063B1E))),
+            Icons.Filled.AutoStories,
+            SacredGold,
+            "K.K"
+        )
+        "torah" -> Quadruple(
+            androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color(0xFF1B365D), androidx.compose.ui.graphics.Color(0xFF0F1E3D))),
+            Icons.Filled.MenuBook,
+            androidx.compose.ui.graphics.Color(0xFFE5A93B),
+            "TEV"
+        )
+        "sermon" -> Quadruple(
+            androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color(0xFF8B1E1E), androidx.compose.ui.graphics.Color(0xFF4A1010))),
+            Icons.Filled.MenuBook,
+            androidx.compose.ui.graphics.Color(0xFFF1C40F),
+            "İNC"
+        )
+        "talmud" -> Quadruple(
+            androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color(0xFF3F3B5C), androidx.compose.ui.graphics.Color(0xFF24213B))),
+            Icons.Filled.MenuBook,
+            androidx.compose.ui.graphics.Color(0xFFD4AF37),
+            "TAL"
+        )
+        "bukhari" -> Quadruple(
+            androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color(0xFF1D5C6A), androidx.compose.ui.graphics.Color(0xFF0F363F))),
+            Icons.Filled.AutoStories,
+            SacredGold,
+            "BUH"
+        )
+        else -> Quadruple(
+            androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color(0xFF4A5568), androidx.compose.ui.graphics.Color(0xFF2D3748))),
+            Icons.Filled.MenuBook,
+            androidx.compose.ui.graphics.Color.White,
+            "MET"
+        )
+    }
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(gradient)
+            .border(1.5.dp, iconColor.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+            .padding(2.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .border(0.5.dp, iconColor.copy(alpha = 0.25f), RoundedCornerShape(4.dp))
+                .padding(2.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = iconColor,
+                    fontSize = 10.sp,
+                    letterSpacing = 1.sp
+                )
+            }
+        }
+    }
+}
+
+private data class Quadruple<out A, out B, out C, out D>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D
+)

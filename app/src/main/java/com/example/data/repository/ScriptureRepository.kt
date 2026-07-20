@@ -149,53 +149,32 @@ class ScriptureRepository(
         isCompleted: Boolean = false,
         contemplationMinutes: Int = 0
     ) {
-        val existing = readingHistoryDao.getHistoryByBookTitle(bookTitle)
-        
         val totalPages = when {
             bookTitle.contains("Quran", ignoreCase = true) || bookTitle.contains("Kur'an", ignoreCase = true) -> 604
-            bookTitle.contains("Torah", ignoreCase = true) || bookTitle.contains("Tevrat", ignoreCase = true) -> 1500
-            bookTitle.contains("Gospel", ignoreCase = true) || bookTitle.contains("İncil", ignoreCase = true) -> 800
-            else -> 100
+            bookTitle.contains("Torah", ignoreCase = true) || bookTitle.contains("Tevrat", ignoreCase = true) -> 300
+            bookTitle.contains("Talmud", ignoreCase = true) -> 2711
+            bookTitle.contains("Bukhari", ignoreCase = true) || bookTitle.contains("Buharî", ignoreCase = true) || bookTitle.contains("Buhari", ignoreCase = true) -> 2000
+            else -> 400 // sermon / gospel / incil
         }
 
-        val historyToSave = if (existing != null) {
-            val isInitiationCall = pagesRead == 0 && contemplationMinutes == 0 && !isCompleted
-            val finalPagesRead = existing.pagesRead + pagesRead
-            val finalCompleted = isCompleted || existing.isCompleted
-            
-            val calculatedProgress = ((finalPagesRead.toFloat() / totalPages.toFloat()) * 100f).toInt().coerceIn(1, 100)
-            val finalProgress = if (isInitiationCall) {
-                existing.progressPercent
-            } else {
-                if (finalCompleted) 100 else calculatedProgress.coerceAtMost(99)
-            }
+        val previousList = readingHistoryDao.getHistoryListByBookTitle(bookTitle)
+        val previousPages = previousList.sumOf { it.pagesRead }
+        val finalTotalPagesRead = previousPages + pagesRead
+        
+        // Cumulative percentage of the book completed
+        val calculatedProgress = ((finalTotalPagesRead.toFloat() / totalPages.toFloat()) * 100f).toInt().coerceIn(1, 100)
 
-            existing.copy(
-                subtitle = subtitle,
-                progressPercent = finalProgress,
-                dateText = dateText,
-                surahOrChapter = surahOrChapter ?: existing.surahOrChapter,
-                pagesRead = finalPagesRead,
-                isCompleted = finalCompleted,
-                contemplationMinutes = existing.contemplationMinutes + contemplationMinutes
-            )
-        } else {
-            val finalPagesRead = pagesRead
-            val finalCompleted = isCompleted
-            val calculatedProgress = ((finalPagesRead.toFloat() / totalPages.toFloat()) * 100f).toInt().coerceIn(1, 100)
-            val finalProgress = if (finalCompleted) 100 else calculatedProgress.coerceAtMost(99)
+        val historyToSave = ReadingHistory(
+            bookTitle = bookTitle,
+            subtitle = subtitle,
+            progressPercent = calculatedProgress,
+            dateText = dateText,
+            surahOrChapter = surahOrChapter,
+            pagesRead = pagesRead,
+            isCompleted = isCompleted || (calculatedProgress >= 100),
+            contemplationMinutes = contemplationMinutes
+        )
 
-            ReadingHistory(
-                bookTitle = bookTitle,
-                subtitle = subtitle,
-                progressPercent = finalProgress,
-                dateText = dateText,
-                surahOrChapter = surahOrChapter,
-                pagesRead = finalPagesRead,
-                isCompleted = finalCompleted,
-                contemplationMinutes = contemplationMinutes
-            )
-        }
         val rowId = readingHistoryDao.insertOrUpdateHistory(historyToSave)
         val userId = getUserId()
         if (userId != null) {

@@ -825,29 +825,16 @@ fun QuranReaderView(
 
                             // Okumayı Kaydet / Tamamla Block
                             item {
-                                var pagesInput by remember { mutableStateOf(autoPagesRead.toString()) }
-                                var contemplationInput by remember { mutableStateOf(autoMinutes.toString()) }
-                                var isCompletedCheck by remember { mutableStateOf(isBottomReached.value) }
+                                val historyList by viewModel.readingHistory.collectAsState()
+                                val bookTitle = if (lang == AppLanguage.EN) "Holy Quran" else "Kur'an-ı Kerim"
+                                val previousPagesRead = historyList
+                                    .filter { it.bookTitle == bookTitle }
+                                    .sumOf { it.pagesRead }
+                                val newTotalPagesRead = previousPagesRead + autoPagesRead
+                                val totalPages = 604
+                                val calculatedProgress = ((newTotalPagesRead.toFloat() / totalPages.toFloat()) * 100f).toInt().coerceIn(1, 100)
+
                                 var isSavedSuccessfully by remember { mutableStateOf(false) }
-
-                                var hasManuallyEditedPages by remember { mutableStateOf(false) }
-                                var hasManuallyEditedMinutes by remember { mutableStateOf(false) }
-
-                                LaunchedEffect(autoPagesRead) {
-                                    if (!hasManuallyEditedPages) {
-                                        pagesInput = autoPagesRead.toString()
-                                    }
-                                }
-                                LaunchedEffect(autoMinutes) {
-                                    if (!hasManuallyEditedMinutes) {
-                                        contemplationInput = autoMinutes.toString()
-                                    }
-                                }
-                                LaunchedEffect(isBottomReached.value) {
-                                    if (isBottomReached.value) {
-                                        isCompletedCheck = true
-                                    }
-                                }
 
                                 Card(
                                     modifier = Modifier
@@ -871,7 +858,7 @@ fun QuranReaderView(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(
-                                                text = if (lang == AppLanguage.EN) "Add Reading Record" else "Okuma Kaydı Ekle",
+                                                text = if (lang == AppLanguage.EN) "Reading Session Summary" else "Okuma Oturumu Özeti",
                                                 style = MaterialTheme.typography.titleMedium,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.primary
@@ -882,7 +869,7 @@ fun QuranReaderView(
                                                 shape = RoundedCornerShape(8.dp)
                                             ) {
                                                 Text(
-                                                    text = if (lang == AppLanguage.EN) "Auto-tracked" else "Otomatik Sayılıyor",
+                                                    text = if (lang == AppLanguage.EN) "Auto-Calculated" else "Otomatik Hesaplandı",
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = SacredGold,
                                                     fontWeight = FontWeight.Bold,
@@ -909,102 +896,129 @@ fun QuranReaderView(
                                                 )
                                             }
                                         } else {
-                                            // Hangi sure okundu (Prefilled & Read-Only/Displayed)
-                                            Text(
-                                                text = if (lang == AppLanguage.EN) {
-                                                    "Read Surah: ${currentSelectedSurah?.nameEnglish ?: "Fatiha"} Surah"
-                                                } else {
-                                                    "Okunan Sure: ${currentSelectedSurah?.nameTurkish ?: "Fatiha"} Suresi"
-                                                },
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = FontWeight.Medium
-                                            )
-
-                                            // Kaç sayfa okundu (Input)
-                                            OutlinedTextField(
-                                                value = pagesInput,
-                                                onValueChange = { 
-                                                    hasManuallyEditedPages = true
-                                                    pagesInput = it.filter { char -> char.isDigit() } 
-                                                },
-                                                label = { Text(if (lang == AppLanguage.EN) "How Many Pages Read?" else "Kaç Sayfa Okundu?") },
-                                                modifier = Modifier.fillMaxWidth(),
-                                                singleLine = true,
-                                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                                                ),
-                                                colors = OutlinedTextFieldDefaults.colors(
-                                                    focusedBorderColor = SacredGold,
-                                                    focusedLabelColor = SacredGold
-                                                )
-                                            )
-
-                                            // Kaç dakika tefekkür edildi (Input)
-                                            OutlinedTextField(
-                                                value = contemplationInput,
-                                                onValueChange = { 
-                                                    hasManuallyEditedMinutes = true
-                                                    contemplationInput = it.filter { char -> char.isDigit() } 
-                                                },
-                                                label = { Text(if (lang == AppLanguage.EN) "How Many Minutes Read?" else "Kaç Dakika Okundu?") },
-                                                modifier = Modifier.fillMaxWidth(),
-                                                singleLine = true,
-                                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                                                ),
-                                                colors = OutlinedTextFieldDefaults.colors(
-                                                    focusedBorderColor = SacredGold,
-                                                    focusedLabelColor = SacredGold
-                                                )
-                                            )
-
-                                            // Süre Tamamlandı mı? (Checkbox/Switch)
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
+                                            // Show automated metrics in clean, beautiful badge rows
+                                            Column(
+                                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                                modifier = Modifier.fillMaxWidth()
                                             ) {
+                                                // Book details
                                                 Text(
-                                                    text = if (lang == AppLanguage.EN) "Surah Completed?" else "Sure Tamamlandı mı?",
-                                                    style = MaterialTheme.typography.bodyMedium
+                                                    text = if (lang == AppLanguage.EN) {
+                                                        "Surah: ${currentSelectedSurah?.nameEnglish ?: "Fatiha"} Surah"
+                                                    } else {
+                                                        "Sure: ${currentSelectedSurah?.nameTurkish ?: "Fatiha"} Suresi"
+                                                    },
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MaterialTheme.colorScheme.onSurface
                                                 )
-                                                Switch(
-                                                    checked = isCompletedCheck,
-                                                    onCheckedChange = { isCompletedCheck = it },
-                                                    colors = SwitchDefaults.colors(
-                                                        checkedThumbColor = SacredGold,
-                                                        checkedTrackColor = SacredGold.copy(alpha = 0.5f)
+
+                                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+
+                                                // Page metric
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Row(
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Icon(Icons.Filled.MenuBook, contentDescription = null, tint = SacredGold, modifier = Modifier.size(18.dp))
+                                                        Text(
+                                                            text = if (lang == AppLanguage.EN) "Pages Read" else "Okunan Sayfa",
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                    Text(
+                                                        text = if (lang == AppLanguage.EN) "$autoPagesRead pages" else "$autoPagesRead sayfa",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = MaterialTheme.colorScheme.onSurface
                                                     )
-                                                )
+                                                }
+
+                                                // Duration metric
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Row(
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Icon(Icons.Filled.HourglassEmpty, contentDescription = null, tint = SacredGold, modifier = Modifier.size(18.dp))
+                                                        Text(
+                                                            text = if (lang == AppLanguage.EN) "Reading Time" else "Okuma Süresi",
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                    Text(
+                                                        text = if (lang == AppLanguage.EN) "$autoMinutes min" else "$autoMinutes dk",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                }
+
+                                                // Cumulative progress metric
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Row(
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Icon(Icons.Filled.TrendingUp, contentDescription = null, tint = SacredGold, modifier = Modifier.size(18.dp))
+                                                        Text(
+                                                            text = if (lang == AppLanguage.EN) "New Book Progress" else "Yeni Kitap İlerlemesi",
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                    Text(
+                                                        text = "%$calculatedProgress",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = SacredGold
+                                                    )
+                                                }
                                             }
 
                                             Button(
                                                 onClick = {
-                                                    val pagesNum = pagesInput.toIntOrNull() ?: 1
-                                                    val contemplationNum = contemplationInput.toIntOrNull() ?: 0
                                                     viewModel.updateReadingSessionProgress(
                                                         bookTitle = if (lang == AppLanguage.EN) "Holy Quran" else "Kur'an-ı Kerim",
                                                         subtitle = if (lang == AppLanguage.EN) {
-                                                            "${currentSelectedSurah?.nameEnglish ?: "Fatiha"} Surah (${pagesNum} pages)"
+                                                            "${currentSelectedSurah?.nameEnglish ?: "Fatiha"} Surah (Chapter ${currentSelectedSurah?.number ?: 1})"
                                                         } else {
-                                                            "${currentSelectedSurah?.nameTurkish ?: "Fatiha"} Suresi (${pagesNum} sayfa)"
+                                                            "${currentSelectedSurah?.nameTurkish ?: "Fatiha"} Suresi (${currentSelectedSurah?.number ?: 1}. Bölüm)"
                                                         },
-                                                        progress = if (isCompletedCheck) 100 else 50,
+                                                        progress = calculatedProgress,
                                                         surahOrChapter = if (lang == AppLanguage.EN) {
-                                                            "${currentSelectedSurah?.nameEnglish ?: "Fatiha"} Surah"
+                                                            "${currentSelectedSurah?.nameEnglish ?: "Fatiha"} Surah (Chapter ${currentSelectedSurah?.number ?: 1})"
                                                         } else {
-                                                            "${currentSelectedSurah?.nameTurkish ?: "Fatiha"} Suresi"
+                                                            "${currentSelectedSurah?.nameTurkish ?: "Fatiha"} Suresi (${currentSelectedSurah?.number ?: 1}. Bölüm)"
                                                         },
-                                                        pagesRead = pagesNum,
-                                                        isCompleted = isCompletedCheck,
-                                                        contemplationMinutes = contemplationNum
+                                                        pagesRead = autoPagesRead,
+                                                        isCompleted = isBottomReached.value,
+                                                        contemplationMinutes = autoMinutes
                                                     )
                                                     isSavedSuccessfully = true
                                                 },
-                                                modifier = Modifier.fillMaxWidth(),
+                                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                                                 colors = ButtonDefaults.buttonColors(containerColor = SacredGold)
                                             ) {
-                                                Text(if (lang == AppLanguage.EN) "Save Reading and Reflection" else "Okuma ve Tefekkürü Kaydet", color = Color.White)
+                                                Text(
+                                                    text = if (lang == AppLanguage.EN) "Save Reading Progress" else "Okuma İlerlemesini Kaydet",
+                                                    color = Color.White
+                                                )
                                             }
                                         }
                                     }
