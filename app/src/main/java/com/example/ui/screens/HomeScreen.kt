@@ -442,11 +442,17 @@ fun HomeScreen(
                                                 )
                                                 val subtitleTranslated = if (lang == AppLanguage.EN) {
                                                     hist.subtitle
+                                                        .replace("Suresi", "Surah")
                                                         .replace("Sure", "Surah")
                                                         .replace("Bölüm", "Chapter")
                                                         .replace("Ayet", "Verse")
+                                                        .replace("sayfa", "pages")
                                                 } else {
                                                     hist.subtitle
+                                                        .replace("Surah", "Suresi")
+                                                        .replace("Chapter", "Bölüm")
+                                                        .replace("Verse", "Ayet")
+                                                        .replace("pages", "sayfa")
                                                 }
                                                 Text(
                                                     text = subtitleTranslated,

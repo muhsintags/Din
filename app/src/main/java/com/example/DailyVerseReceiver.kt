@@ -357,28 +357,22 @@ class DailyVerseReceiver : BroadcastReceiver() {
                 return
             }
 
-            // Check if already scheduled (using FLAG_NO_CREATE)
-            val alreadyScheduledIntent = PendingIntent.getBroadcast(
-                context,
-                0,
-                intent,
-                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-            )
-
             // Get interval in minutes, default is 24 hours (1440 minutes)
             val intervalMinutes = prefs.getInt("notification_interval_minutes", 1440)
-            val savedLastScheduledMinutes = prefs.getInt("last_scheduled_minutes", -1)
-
-            // Only reschedule if not already scheduled, or if interval changed, or if forced
-            if (alreadyScheduledIntent != null && savedLastScheduledMinutes == intervalMinutes && !force) {
-                // Already scheduled with the same interval, do nothing
-                return
-            }
-
             val intervalMillis = intervalMinutes * 60 * 1000L
-            val triggerAtMillis = System.currentTimeMillis() + intervalMillis
 
-            prefs.edit().putInt("last_scheduled_minutes", intervalMinutes).apply()
+            val lastTriggerTime = prefs.getLong("last_trigger_time", 0L)
+            val currentTime = System.currentTimeMillis()
+
+            // Calculate when the next alarm should trigger
+            var triggerAtMillis = lastTriggerTime + intervalMillis
+            if (force) {
+                triggerAtMillis = currentTime + 3000L // Trigger in 3 seconds to show immediate confirmation
+                prefs.edit().putLong("last_trigger_time", currentTime).apply()
+            } else if (triggerAtMillis <= currentTime) {
+                triggerAtMillis = currentTime + intervalMillis
+                prefs.edit().putLong("last_trigger_time", currentTime).apply()
+            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setAndAllowWhileIdle(

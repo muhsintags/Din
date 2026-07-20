@@ -278,10 +278,11 @@ fun BibleReaderView(
                             } else if (currentSelectedBook != null) {
                                 if (lang == AppLanguage.EN) currentSelectedBook!!.nameEnglish else currentSelectedBook!!.nameTurkish
                             } else {
-                                if (isTorah) {
-                                    if (lang == AppLanguage.EN) "Torah (Tanakh)" else "Tevrat (Tanah)"
-                                } else {
-                                    if (lang == AppLanguage.EN) "Gospel (Bible)" else "İncil (Ahit)"
+                                when (book.id) {
+                                    "torah" -> if (lang == AppLanguage.EN) "Torah (Tanakh)" else "Tevrat (Tanah)"
+                                    "talmud" -> if (lang == AppLanguage.EN) "Talmud Bavli" else "Talmud (Babil)"
+                                    "bukhari" -> if (lang == AppLanguage.EN) "Sahih al-Bukhari" else "Sahih-i Buhârî"
+                                    else -> if (lang == AppLanguage.EN) "Gospel (Bible)" else "İncil (Ahit)"
                                 }
                             },
                             fontFamily = FontFamily.Serif,
@@ -1027,29 +1028,37 @@ fun BibleReaderView(
 
                         // Okumayı Kaydet / Tamamla Block
                         item {
-                            var pagesInput by remember { mutableStateOf(autoPagesRead.toString()) }
-                            var contemplationInput by remember { mutableStateOf(autoMinutes.toString()) }
-                            var isCompletedCheck by remember { mutableStateOf(isBottomReached.value) }
+                            val historyList by viewModel.readingHistory.collectAsState()
+                            val bTitle = if (lang == AppLanguage.EN) {
+                                when (book.id) {
+                                    "torah" -> "Torah"
+                                    "sermon" -> "Gospel"
+                                    "talmud" -> "Talmud"
+                                    "bukhari" -> "Sahih al-Bukhari"
+                                    else -> "Scripture"
+                                }
+                            } else {
+                                when (book.id) {
+                                    "torah" -> "Tevrat"
+                                    "sermon" -> "İncil"
+                                    "talmud" -> "Talmud"
+                                    "bukhari" -> "Sahih-i Buharî"
+                                    else -> "Kutsal Metin"
+                                }
+                            }
+                            val previousPagesRead = historyList
+                                .filter { it.bookTitle == bTitle }
+                                .sumOf { it.pagesRead }
+                            val newTotalPagesRead = previousPagesRead + autoPagesRead
+                            val totalPages = when {
+                                book.id == "torah" -> 300
+                                book.id == "talmud" -> 2711
+                                book.id == "bukhari" -> 2000
+                                else -> 400 // sermon / gospel / incil
+                            }
+                            val calculatedProgress = ((newTotalPagesRead.toFloat() / totalPages.toFloat()) * 100f).toInt().coerceIn(1, 100)
+
                             var isSavedSuccessfully by remember { mutableStateOf(false) }
-
-                            var hasManuallyEditedPages by remember { mutableStateOf(false) }
-                            var hasManuallyEditedMinutes by remember { mutableStateOf(false) }
-
-                            LaunchedEffect(autoPagesRead) {
-                                if (!hasManuallyEditedPages) {
-                                    pagesInput = autoPagesRead.toString()
-                                }
-                            }
-                            LaunchedEffect(autoMinutes) {
-                                if (!hasManuallyEditedMinutes) {
-                                    contemplationInput = autoMinutes.toString()
-                                }
-                            }
-                            LaunchedEffect(isBottomReached.value) {
-                                if (isBottomReached.value) {
-                                    isCompletedCheck = true
-                                }
-                            }
 
                             Card(
                                 modifier = Modifier
@@ -1073,7 +1082,7 @@ fun BibleReaderView(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = if (lang == AppLanguage.EN) "Add Reading Record" else "Okuma Kaydı Ekle",
+                                            text = if (lang == AppLanguage.EN) "Reading Session Summary" else "Okuma Oturumu Özeti",
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary
@@ -1084,7 +1093,7 @@ fun BibleReaderView(
                                             shape = RoundedCornerShape(8.dp)
                                         ) {
                                             Text(
-                                                text = if (lang == AppLanguage.EN) "Auto-tracked" else "Otomatik Sayılıyor",
+                                                text = if (lang == AppLanguage.EN) "Auto-Calculated" else "Otomatik Hesaplandı",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = SacredGold,
                                                 fontWeight = FontWeight.Bold,
@@ -1111,117 +1120,126 @@ fun BibleReaderView(
                                             )
                                         }
                                     } else {
-                                        // Hangi bölüm okundu
                                         val displaySection = if (lang == AppLanguage.EN) {
                                             (currentSelectedBook?.nameEnglish ?: activeBook.title)
                                         } else {
                                             (currentSelectedBook?.nameTurkish ?: activeBook.title)
                                         }
                                         val displayChapter = currentSelectedChapter?.let { if (lang == AppLanguage.EN) " Chapter $it" else " Bölüm $it" } ?: ""
-                                        Text(
-                                            text = if (lang == AppLanguage.EN) "Chapter Read: $displaySection$displayChapter" else "Okunan Bölüm: $displaySection$displayChapter",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Medium
-                                        )
 
-                                        // Kaç sayfa okundu (Input)
-                                        OutlinedTextField(
-                                            value = pagesInput,
-                                            onValueChange = { 
-                                                hasManuallyEditedPages = true
-                                                pagesInput = it.filter { char -> char.isDigit() } 
-                                            },
-                                            label = { Text(if (lang == AppLanguage.EN) "How Many Pages Read?" else "Kaç Sayfa Okundu?") },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            singleLine = true,
-                                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                                            ),
-                                            colors = OutlinedTextFieldDefaults.colors(
-                                                focusedBorderColor = SacredGold,
-                                                focusedLabelColor = SacredGold
-                                            )
-                                        )
-
-                                        // Kaç dakika tefekkür edildi (Input)
-                                        OutlinedTextField(
-                                            value = contemplationInput,
-                                            onValueChange = { 
-                                                hasManuallyEditedMinutes = true
-                                                contemplationInput = it.filter { char -> char.isDigit() } 
-                                            },
-                                            label = { Text(if (lang == AppLanguage.EN) "How Many Minutes Read?" else "Kaç Dakika Okundu?") },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            singleLine = true,
-                                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                                            ),
-                                            colors = OutlinedTextFieldDefaults.colors(
-                                                focusedBorderColor = SacredGold,
-                                                focusedLabelColor = SacredGold
-                                            )
-                                        )
-
-                                        // Bölüm Tamamlandı mı?
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
+                                        // Show automated metrics in clean, beautiful badge rows
+                                        Column(
+                                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                                            modifier = Modifier.fillMaxWidth()
                                         ) {
+                                            // Chapter/Section details
                                             Text(
-                                                text = if (lang == AppLanguage.EN) "Is Chapter Completed?" else "Bölüm Tamamlandı mı?",
-                                                style = MaterialTheme.typography.bodyMedium
+                                                text = if (lang == AppLanguage.EN) "Section: $displaySection$displayChapter" else "Bölüm: $displaySection$displayChapter",
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurface
                                             )
-                                            Switch(
-                                                checked = isCompletedCheck,
-                                                onCheckedChange = { isCompletedCheck = it },
-                                                colors = SwitchDefaults.colors(
-                                                    checkedThumbColor = SacredGold,
-                                                    checkedTrackColor = SacredGold.copy(alpha = 0.5f)
+
+                                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+
+                                            // Page metric
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Icon(Icons.Filled.MenuBook, contentDescription = null, tint = SacredGold, modifier = Modifier.size(18.dp))
+                                                    Text(
+                                                        text = if (lang == AppLanguage.EN) "Pages Read" else "Okunan Sayfa",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                                Text(
+                                                    text = if (lang == AppLanguage.EN) "$autoPagesRead pages" else "$autoPagesRead sayfa",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface
                                                 )
-                                            )
+                                            }
+
+                                            // Duration metric
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Icon(Icons.Filled.HourglassEmpty, contentDescription = null, tint = SacredGold, modifier = Modifier.size(18.dp))
+                                                    Text(
+                                                        text = if (lang == AppLanguage.EN) "Reading Time" else "Okuma Süresi",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                                Text(
+                                                    text = if (lang == AppLanguage.EN) "$autoMinutes min" else "$autoMinutes dk",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                            }
+
+                                            // Cumulative progress metric
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Icon(Icons.Filled.TrendingUp, contentDescription = null, tint = SacredGold, modifier = Modifier.size(18.dp))
+                                                    Text(
+                                                        text = if (lang == AppLanguage.EN) "New Book Progress" else "Yeni Kitap İlerlemesi",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                                Text(
+                                                    text = "%$calculatedProgress",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = SacredGold
+                                                )
+                                            }
                                         }
 
                                         Button(
                                             onClick = {
-                                                val pagesNum = pagesInput.toIntOrNull() ?: 1
-                                                val contemplationNum = contemplationInput.toIntOrNull() ?: 0
                                                 viewModel.updateReadingSessionProgress(
-                                                    bookTitle = if (lang == AppLanguage.EN) {
-                                                        when (book.id) {
-                                                            "torah" -> "Torah"
-                                                            "sermon" -> "Gospel"
-                                                            "talmud" -> "Talmud"
-                                                            "bukhari" -> "Sahih al-Bukhari"
-                                                            else -> "Scripture"
-                                                        }
-                                                    } else {
-                                                        when (book.id) {
-                                                            "torah" -> "Tevrat"
-                                                            "sermon" -> "İncil"
-                                                            "talmud" -> "Talmud"
-                                                            "bukhari" -> "Sahih-i Buharî"
-                                                            else -> "Kutsal Metin"
-                                                        }
-                                                    },
+                                                    bookTitle = bTitle,
                                                     subtitle = if (lang == AppLanguage.EN) {
-                                                        "$displaySection$displayChapter ($pagesNum pages)"
+                                                        "$displaySection (Chapter ${currentSelectedChapter ?: 1})"
                                                     } else {
-                                                        "$displaySection$displayChapter ($pagesNum sayfa)"
+                                                        "$displaySection (${currentSelectedChapter ?: 1}. Bölüm)"
                                                     },
-                                                    progress = if (isCompletedCheck) 100 else 50,
-                                                    surahOrChapter = "$displaySection$displayChapter",
-                                                    pagesRead = pagesNum,
-                                                    isCompleted = isCompletedCheck,
-                                                    contemplationMinutes = contemplationNum
+                                                    progress = calculatedProgress,
+                                                    surahOrChapter = "$displaySection (${currentSelectedChapter ?: 1})",
+                                                    pagesRead = autoPagesRead,
+                                                    isCompleted = isBottomReached.value,
+                                                    contemplationMinutes = autoMinutes
                                                 )
                                                 isSavedSuccessfully = true
                                             },
-                                            modifier = Modifier.fillMaxWidth(),
+                                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                                             colors = ButtonDefaults.buttonColors(containerColor = SacredGold)
                                         ) {
                                             Text(
-                                                text = if (lang == AppLanguage.EN) "Save Reading and Contemplation" else "Okuma ve Tefekkürü Kaydet",
+                                                text = if (lang == AppLanguage.EN) "Save Reading Progress" else "Okuma İlerlemesini Kaydet",
                                                 color = Color.White
                                             )
                                         }
