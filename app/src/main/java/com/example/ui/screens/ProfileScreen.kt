@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -40,6 +41,7 @@ fun ProfileScreen(
     onNavigateToAppearance: () -> Unit
 ) {
     val readerSettings by viewModel.readerSettings.collectAsState()
+    val ctx = LocalContext.current
     val lang = readerSettings.language
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val selectedBooks by viewModel.selectedBooksForVerse.collectAsState()
@@ -756,7 +758,23 @@ fun ProfileScreen(
                                 }
                                 Switch(
                                     checked = notificationsEnabled,
-                                    onCheckedChange = { viewModel.toggleNotifications() },
+                                    onCheckedChange = { checked ->
+                                        if (checked) {
+                                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                                val permission = android.Manifest.permission.POST_NOTIFICATIONS
+                                                if (androidx.core.content.ContextCompat.checkSelfPermission(ctx, permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                                    (ctx as? android.app.Activity)?.let { activity ->
+                                                        androidx.core.app.ActivityCompat.requestPermissions(
+                                                            activity,
+                                                            arrayOf(permission),
+                                                            101
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        viewModel.toggleNotifications()
+                                    },
                                     colors = SwitchDefaults.colors(
                                         checkedThumbColor = Color.White,
                                         checkedTrackColor = MaterialTheme.colorScheme.primary,
@@ -858,7 +876,21 @@ fun ProfileScreen(
                                     Spacer(modifier = Modifier.height(8.dp))
 
                                     OutlinedButton(
-                                        onClick = { viewModel.sendTestNotification() },
+                                        onClick = {
+                                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                                val permission = android.Manifest.permission.POST_NOTIFICATIONS
+                                                if (androidx.core.content.ContextCompat.checkSelfPermission(ctx, permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                                    (ctx as? android.app.Activity)?.let { activity ->
+                                                        androidx.core.app.ActivityCompat.requestPermissions(
+                                                            activity,
+                                                            arrayOf(permission),
+                                                            101
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            viewModel.sendTestNotification()
+                                        },
                                         modifier = Modifier.fillMaxWidth().testTag("send_test_notification_button"),
                                         shape = RoundedCornerShape(8.dp),
                                         colors = ButtonDefaults.outlinedButtonColors(contentColor = SacredGold),
