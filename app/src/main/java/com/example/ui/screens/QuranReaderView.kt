@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -807,7 +808,7 @@ fun QuranReaderView(
                                             modifier = Modifier.fillMaxWidth()
                                         )
 
-                                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
                                         // Turkish Text
                                         Text(
@@ -925,7 +926,7 @@ fun QuranReaderView(
                                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                                         verticalAlignment = Alignment.CenterVertically
                                                     ) {
-                                                        Icon(Icons.Filled.MenuBook, contentDescription = null, tint = SacredGold, modifier = Modifier.size(18.dp))
+                                                        Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, tint = SacredGold, modifier = Modifier.size(18.dp))
                                                         Text(
                                                             text = if (lang == AppLanguage.EN) "Pages Read" else "Okunan Sayfa",
                                                             style = MaterialTheme.typography.bodyMedium,
@@ -975,7 +976,7 @@ fun QuranReaderView(
                                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                                         verticalAlignment = Alignment.CenterVertically
                                                     ) {
-                                                        Icon(Icons.Filled.TrendingUp, contentDescription = null, tint = SacredGold, modifier = Modifier.size(18.dp))
+                                                        Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = SacredGold, modifier = Modifier.size(18.dp))
                                                         Text(
                                                             text = if (lang == AppLanguage.EN) "New Book Progress" else "Yeni Kitap İlerlemesi",
                                                             style = MaterialTheme.typography.bodyMedium,

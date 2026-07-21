@@ -143,7 +143,7 @@ fun AppearanceScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                         
-                        Divider(
+                        HorizontalDivider(
                             color = previewTextColor.copy(alpha = 0.15f),
                             thickness = 1.dp,
                             modifier = Modifier.width(64.dp).padding(vertical = 4.dp)

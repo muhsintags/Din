@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -366,7 +367,7 @@ fun DictionaryScreen(
                 val categories = listOf(
                     Triple(TermCategory.ALL, if (lang == AppLanguage.EN) "All" else "Hepsi", Icons.Filled.AllInclusive),
                     Triple(TermCategory.ISLAMIC, if (lang == AppLanguage.EN) "Quranic" else "Kur'anî", Icons.Filled.Star),
-                    Triple(TermCategory.BIBLICAL, if (lang == AppLanguage.EN) "Biblical" else "Kitab-ı Mukaddes", Icons.Filled.MenuBook),
+                    Triple(TermCategory.BIBLICAL, if (lang == AppLanguage.EN) "Biblical" else "Kitab-ı Mukaddes", Icons.AutoMirrored.Filled.MenuBook),
                     Triple(TermCategory.GENERAL, if (lang == AppLanguage.EN) "Theology" else "Genel Teoloji", Icons.Filled.SelfImprovement)
                 )
 
@@ -553,7 +554,7 @@ fun DictionaryScreen(
                                     val exampleText = if (lang == AppLanguage.EN) item.exampleEn else item.exampleTr
                                     if (exampleText.isNotEmpty()) {
                                         Spacer(modifier = Modifier.height(14.dp))
-                                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                                         Spacer(modifier = Modifier.height(10.dp))
                                         
                                         Row(

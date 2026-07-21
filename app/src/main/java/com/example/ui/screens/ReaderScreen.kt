@@ -389,7 +389,7 @@ fun ReaderScreen(
                                         }
                                     }
                                 }
-                                Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                             }
 
                             // 2. AUDIO PLAYER ROW
@@ -496,7 +496,7 @@ fun ReaderScreen(
                                         }
                                     }
                                 }
-                                Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                             }
 
                             // 3. OFFLINE DOWNLOAD MODULE ROW
@@ -584,7 +584,7 @@ fun ReaderScreen(
                                 )
                             }
 
-                            Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
 
                             val isAiLoaded = book.contentTitle != (com.example.data.model.BookRepository.books.firstOrNull { it.id == book.id }?.contentTitle ?: "")
 
@@ -656,7 +656,7 @@ fun ReaderScreen(
                                   }
                             }
 
-                            Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
 
                             Column(
                                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),

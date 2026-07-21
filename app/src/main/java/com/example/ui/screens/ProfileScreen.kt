@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -305,7 +306,7 @@ fun ProfileScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.MenuBook,
+                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
                             contentDescription = "Scriptorium Logo",
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -935,7 +936,7 @@ fun ProfileScreen(
                                             ) {
                                                 val bookIcon = when (book.id) {
                                                     "quran" -> Icons.Filled.AutoStories
-                                                    "torah" -> Icons.Filled.MenuBook
+                                                    "torah" -> Icons.AutoMirrored.Filled.MenuBook
                                                     "sermon" -> Icons.Filled.HistoryEdu
                                                     else -> Icons.Filled.Book
                                                 }
@@ -1002,7 +1003,7 @@ fun ProfileScreen(
                                 )
                             }
                             Icon(
-                                imageVector = Icons.Filled.OpenInNew,
+                                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                             )
@@ -1031,7 +1032,7 @@ fun ProfileScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Logout,
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
                             contentDescription = if (lang == AppLanguage.EN) "Log Out" else "Oturumu Kapat",
                             modifier = Modifier.size(20.dp)
                         )
