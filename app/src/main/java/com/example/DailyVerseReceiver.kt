@@ -309,9 +309,12 @@ class DailyVerseReceiver : BroadcastReceiver() {
             val channel = NotificationChannel(
                 channelId,
                 "Günün Ayetleri",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Seçilen kutsal kitaplardan saatlik ayet bildirimleri."
+                enableVibration(true)
+                enableLights(true)
+                setShowBadge(true)
             }
             notificationManager.createNotificationChannel(channel)
         }
@@ -327,11 +330,12 @@ class DailyVerseReceiver : BroadcastReceiver() {
         )
 
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(com.Muhsin.kutuphane.R.drawable.ico_mesaj)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setContentIntent(contentIntent)
             .setAutoCancel(true)
             .build()

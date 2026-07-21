@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.media.MediaPlayer
 import android.os.Build
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.db.AppDatabase
@@ -2447,6 +2448,19 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
         _notificationsEnabled.value = newValue
         val prefs = getApplication<Application>().getSharedPreferences("scriptorium_auth", Context.MODE_PRIVATE)
         prefs.edit().putBoolean("notifications_enabled", newValue).apply()
+        
+        val context = getApplication<Application>()
+        val lang = _readerSettings.value.language
+        Toast.makeText(
+            context,
+            if (newValue) {
+                if (lang == AppLanguage.EN) "Notifications activated! You will receive random verses." else "Bildirimler aktif edildi! Belirlediğiniz aralıklarla ayetler gönderilecektir."
+            } else {
+                if (lang == AppLanguage.EN) "Notifications deactivated." else "Bildirimler kapatıldı."
+            },
+            Toast.LENGTH_SHORT
+        ).show()
+        
         com.example.DailyVerseReceiver.scheduleAlarm(getApplication(), force = true)
     }
 
@@ -2455,18 +2469,40 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
         _notificationIntervalMinutes.value = cappedMinutes
         val prefs = getApplication<Application>().getSharedPreferences("scriptorium_auth", Context.MODE_PRIVATE)
         prefs.edit().putInt("notification_interval_minutes", cappedMinutes).apply()
+        
+        val context = getApplication<Application>()
+        val lang = _readerSettings.value.language
+        val textTr = if (cappedMinutes >= 60) "${cappedMinutes / 60} saat" else "$cappedMinutes dakika"
+        val textEn = if (cappedMinutes >= 60) "${cappedMinutes / 60} hours" else "$cappedMinutes minutes"
+        Toast.makeText(
+            context,
+            if (lang == AppLanguage.EN) "Notification interval updated to $textEn!" else "Bildirim sıklığı $textTr olarak güncellendi!",
+            Toast.LENGTH_SHORT
+        ).show()
+        
         com.example.DailyVerseReceiver.scheduleAlarm(getApplication(), force = true)
     }
 
     fun sendTestNotification() {
         viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>()
+            val lang = _readerSettings.value.language
+            
+            // Show start progress toast on UI thread
+            withContext(Dispatchers.Main) {
+                Toast.makeText(
+                    context,
+                    if (lang == AppLanguage.EN) "Sending test notification..." else "Test bildirimi gönderiliyor...",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            
             val allowedBookIds = _selectedBooksForVerse.value
             val filteredBooks = books.filter { allowedBookIds.contains(it.id) }
             val targetBooks = if (filteredBooks.isEmpty()) books else filteredBooks
             val randomBook = targetBooks.randomOrNull() ?: books.first()
             val fetched = fetchVerseFromApiWithFallback(randomBook.id, randomBook)
             
-            val context = getApplication<Application>()
             val channelId = "hourly_verse_channel"
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
 
@@ -2474,9 +2510,12 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                 val channel = android.app.NotificationChannel(
                     channelId,
                     "Günün Ayetleri",
-                    android.app.NotificationManager.IMPORTANCE_DEFAULT
+                    android.app.NotificationManager.IMPORTANCE_HIGH
                 ).apply {
                     description = "Seçilen kutsal kitaplardan saatlik ayet bildirimleri."
+                    enableVibration(true)
+                    enableLights(true)
+                    setShowBadge(true)
                 }
                 notificationManager.createNotificationChannel(channel)
             }
@@ -2492,16 +2531,26 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             )
 
             val notification = androidx.core.app.NotificationCompat.Builder(context, channelId)
-                .setSmallIcon(com.Muhsin.kutuphane.R.drawable.ico_mesaj)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setContentTitle(fetched.first)
                 .setContentText(fetched.second)
                 .setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(fetched.second))
-                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
+                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(androidx.core.app.NotificationCompat.DEFAULT_ALL)
                 .setContentIntent(contentIntent)
                 .setAutoCancel(true)
                 .build()
 
             notificationManager.notify(9999, notification)
+            
+            // Show final success toast
+            withContext(Dispatchers.Main) {
+                Toast.makeText(
+                    context,
+                    if (lang == AppLanguage.EN) "Test notification sent successfully!" else "Test bildirimi başarıyla gönderildi!",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 
