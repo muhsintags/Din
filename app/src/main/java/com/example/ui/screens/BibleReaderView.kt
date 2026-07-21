@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -755,7 +756,7 @@ fun BibleReaderView(
                                             }
                                         }
                                         
-                                        Divider(
+                                        HorizontalDivider(
                                             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
                                             modifier = Modifier.padding(vertical = 4.dp)
                                         )
@@ -967,7 +968,7 @@ fun BibleReaderView(
                                             )
                                         }
                                     }
-                                    Divider(
+                                    HorizontalDivider(
                                         color = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f),
                                         modifier = Modifier.padding(top = 16.dp)
                                     )
@@ -1020,7 +1021,7 @@ fun BibleReaderView(
                                                 lineHeight = 22.sp
                                             )
                                         }
-                                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                                     }
                                 }
                             }
@@ -1152,7 +1153,7 @@ fun BibleReaderView(
                                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    Icon(Icons.Filled.MenuBook, contentDescription = null, tint = SacredGold, modifier = Modifier.size(18.dp))
+                                                    Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, tint = SacredGold, modifier = Modifier.size(18.dp))
                                                     Text(
                                                         text = if (lang == AppLanguage.EN) "Pages Read" else "Okunan Sayfa",
                                                         style = MaterialTheme.typography.bodyMedium,
@@ -1202,7 +1203,7 @@ fun BibleReaderView(
                                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    Icon(Icons.Filled.TrendingUp, contentDescription = null, tint = SacredGold, modifier = Modifier.size(18.dp))
+                                                    Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = SacredGold, modifier = Modifier.size(18.dp))
                                                     Text(
                                                         text = if (lang == AppLanguage.EN) "New Book Progress" else "Yeni Kitap İlerlemesi",
                                                         style = MaterialTheme.typography.bodyMedium,
