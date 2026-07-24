@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -63,6 +64,7 @@ import com.example.ui.screens.ReaderScreen
 import com.example.ui.screens.ReadingHistoryScreen
 import com.example.ui.screens.SearchScreen
 import com.example.ui.screens.DictionaryScreen
+import com.example.ui.screens.MiraclesScreen
 import com.example.ui.util.Loc
 import com.example.ui.util.AppLanguage
 import com.example.ui.theme.ScriptoriumTheme
@@ -75,10 +77,18 @@ import android.app.AlarmManager
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Surface
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.core.content.ContextCompat
 
 enum class NavigationScreen {
-    HOME, LIBRARY, DICTIONARY, SEARCH, PROFILE, READER, HISTORY, NOTES, APPEARANCE
+    HOME, LIBRARY, MIRACLES, DICTIONARY, SEARCH, PROFILE, READER, HISTORY, NOTES, APPEARANCE
 }
 
 class MainActivity : ComponentActivity() {
@@ -267,6 +277,7 @@ class MainActivity : ComponentActivity() {
                     )
                 } else {
                     var currentScreen by remember { mutableStateOf(NavigationScreen.HOME) }
+                    val miraclesRepository = remember { com.example.data.repository.MiraclesRepository() }
                 var activeBookForReader by remember { mutableStateOf<Book?>(null) }
                 var searchScreenInitialQuery by remember { mutableStateOf("") }
 
@@ -277,6 +288,7 @@ class MainActivity : ComponentActivity() {
                 BackHandler(enabled = currentScreen != NavigationScreen.HOME) {
                     when (currentScreen) {
                         NavigationScreen.LIBRARY,
+                        NavigationScreen.MIRACLES,
                         NavigationScreen.DICTIONARY,
                         NavigationScreen.SEARCH,
                         NavigationScreen.PROFILE -> {
@@ -300,6 +312,7 @@ class MainActivity : ComponentActivity() {
                 val showBottomBar = currentScreen in listOf(
                     NavigationScreen.HOME,
                     NavigationScreen.LIBRARY,
+                    NavigationScreen.MIRACLES,
                     NavigationScreen.DICTIONARY,
                     NavigationScreen.SEARCH,
                     NavigationScreen.PROFILE
@@ -309,100 +322,88 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     bottomBar = {
                         if (showBottomBar) {
-                            NavigationBar(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                tonalElevation = 8.dp // subtle shadow
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                                    .navigationBarsPadding(),
+                                contentAlignment = Alignment.Center
                             ) {
-                                NavigationBarItem(
-                                    selected = currentScreen == NavigationScreen.HOME,
-                                    onClick = {
-                                        currentScreen = NavigationScreen.HOME
-                                        lastPrimaryScreen = NavigationScreen.HOME
-                                    },
-                                    icon = { Icon(Icons.Filled.Home, contentDescription = Loc.get("home", lang)) },
-                                    label = { Text(Loc.get("home", lang)) },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                    ),
-                                    modifier = Modifier.testTag("nav_tab_home")
-                                )
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(64.dp)
+                                        .shadow(12.dp, RoundedCornerShape(32.dp), spotColor = SacredGold.copy(alpha = 0.25f)),
+                                    shape = RoundedCornerShape(32.dp),
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                                    tonalElevation = 8.dp,
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxSize(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        ModernNavItem(
+                                            selected = currentScreen == NavigationScreen.HOME,
+                                            icon = Icons.Filled.Home,
+                                            label = Loc.get("home", lang),
+                                            onClick = {
+                                                currentScreen = NavigationScreen.HOME
+                                                lastPrimaryScreen = NavigationScreen.HOME
+                                            },
+                                            tag = "nav_tab_home"
+                                        )
 
-                                NavigationBarItem(
-                                    selected = currentScreen == NavigationScreen.LIBRARY,
-                                    onClick = {
-                                        currentScreen = NavigationScreen.LIBRARY
-                                        lastPrimaryScreen = NavigationScreen.LIBRARY
-                                    },
-                                    icon = { Icon(Icons.Filled.AutoStories, contentDescription = Loc.get("library", lang)) },
-                                    label = { Text(Loc.get("library", lang)) },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                    ),
-                                    modifier = Modifier.testTag("nav_tab_library")
-                                )
+                                        ModernNavItem(
+                                            selected = currentScreen == NavigationScreen.LIBRARY,
+                                            icon = Icons.Filled.AutoStories,
+                                            label = Loc.get("library", lang),
+                                            onClick = {
+                                                currentScreen = NavigationScreen.LIBRARY
+                                                lastPrimaryScreen = NavigationScreen.LIBRARY
+                                            },
+                                            tag = "nav_tab_library"
+                                        )
 
-                                NavigationBarItem(
-                                    selected = currentScreen == NavigationScreen.DICTIONARY,
-                                    onClick = {
-                                        currentScreen = NavigationScreen.DICTIONARY
-                                        lastPrimaryScreen = NavigationScreen.DICTIONARY
-                                    },
-                                    icon = { Icon(Icons.Filled.Book, contentDescription = Loc.get("dictionary", lang)) },
-                                    label = { Text(Loc.get("dictionary", lang)) },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                    ),
-                                    modifier = Modifier.testTag("nav_tab_dictionary")
-                                )
+                                        ModernNavItem(
+                                            selected = currentScreen == NavigationScreen.DICTIONARY,
+                                            icon = Icons.Filled.Book,
+                                            label = Loc.get("dictionary", lang),
+                                            onClick = {
+                                                currentScreen = NavigationScreen.DICTIONARY
+                                                lastPrimaryScreen = NavigationScreen.DICTIONARY
+                                            },
+                                            tag = "nav_tab_dictionary"
+                                        )
 
-                                NavigationBarItem(
-                                    selected = currentScreen == NavigationScreen.SEARCH,
-                                    onClick = {
-                                        currentScreen = NavigationScreen.SEARCH
-                                        searchScreenInitialQuery = "" // Reset filter
-                                        lastPrimaryScreen = NavigationScreen.SEARCH
-                                    },
-                                    icon = { Icon(Icons.Filled.Search, contentDescription = Loc.get("search", lang)) },
-                                    label = { Text(Loc.get("search", lang)) },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                    ),
-                                    modifier = Modifier.testTag("nav_tab_search")
-                                )
+                                        ModernNavItem(
+                                            selected = currentScreen == NavigationScreen.SEARCH,
+                                            icon = Icons.Filled.Search,
+                                            label = Loc.get("search", lang),
+                                            onClick = {
+                                                currentScreen = NavigationScreen.SEARCH
+                                                searchScreenInitialQuery = ""
+                                                lastPrimaryScreen = NavigationScreen.SEARCH
+                                            },
+                                            tag = "nav_tab_search"
+                                        )
 
-                                NavigationBarItem(
-                                    selected = currentScreen == NavigationScreen.PROFILE,
-                                    onClick = {
-                                        currentScreen = NavigationScreen.PROFILE
-                                        lastPrimaryScreen = NavigationScreen.PROFILE
-                                    },
-                                    icon = { Icon(Icons.Filled.Person, contentDescription = Loc.get("profile", lang)) },
-                                    label = { Text(Loc.get("profile", lang)) },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                    ),
-                                    modifier = Modifier.testTag("nav_tab_profile")
-                                )
+                                        ModernNavItem(
+                                            selected = currentScreen == NavigationScreen.PROFILE,
+                                            icon = Icons.Filled.Person,
+                                            label = Loc.get("profile", lang),
+                                            onClick = {
+                                                currentScreen = NavigationScreen.PROFILE
+                                                lastPrimaryScreen = NavigationScreen.PROFILE
+                                            },
+                                            tag = "nav_tab_profile"
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -442,6 +443,15 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
+                            NavigationScreen.MIRACLES -> {
+                                MiraclesScreen(
+                                    repository = miraclesRepository,
+                                    lang = lang,
+                                    onNavigateToSettings = {
+                                        currentScreen = NavigationScreen.APPEARANCE
+                                    }
+                                )
+                            }
                             NavigationScreen.DICTIONARY -> {
                                 DictionaryScreen(
                                     viewModel = viewModel,
@@ -456,6 +466,9 @@ class MainActivity : ComponentActivity() {
                                     onNavigateToBook = { book ->
                                         activeBookForReader = book
                                         currentScreen = NavigationScreen.READER
+                                    },
+                                    onNavigateToMiracles = {
+                                        currentScreen = NavigationScreen.MIRACLES
                                     },
                                     initialQuery = searchScreenInitialQuery
                                 )
@@ -509,6 +522,53 @@ class MainActivity : ComponentActivity() {
                 }
               }
             }
+        }
+    }
+}
+
+@Composable
+private fun ModernNavItem(
+    selected: Boolean,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    tag: String
+) {
+    val activeColor = SacredGold
+    val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+
+    val animatedBgColor by animateColorAsState(
+        targetValue = if (selected) SacredGold.copy(alpha = 0.16f) else Color.Transparent,
+        label = "nav_item_bg"
+    )
+
+    Box(
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(animatedBgColor)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .testTag(tag),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = if (selected) activeColor else inactiveColor,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = label,
+                fontSize = 10.sp,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                color = if (selected) activeColor else inactiveColor,
+                maxLines = 1
+            )
         }
     }
 }

@@ -8,6 +8,7 @@ object Loc {
     private val tr = mapOf(
         "home" to "Ana Sayfa",
         "library" to "Kütüphane",
+        "miracles" to "Mucizeler",
         "dictionary" to "Sözlük",
         "search" to "Arama",
         "profile" to "Profil",
@@ -104,6 +105,7 @@ object Loc {
     private val en = mapOf(
         "home" to "Home",
         "library" to "Library",
+        "miracles" to "Miracles",
         "dictionary" to "Dictionary",
         "search" to "Search",
         "profile" to "Profile",
