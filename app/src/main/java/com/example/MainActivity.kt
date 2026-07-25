@@ -64,7 +64,6 @@ import com.example.ui.screens.ReaderScreen
 import com.example.ui.screens.ReadingHistoryScreen
 import com.example.ui.screens.SearchScreen
 import com.example.ui.screens.DictionaryScreen
-import com.example.ui.screens.MiraclesScreen
 import com.example.ui.util.Loc
 import com.example.ui.util.AppLanguage
 import com.example.ui.theme.ScriptoriumTheme
@@ -87,8 +86,30 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.core.content.ContextCompat
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
+import com.example.ui.util.bounceClick
+
 enum class NavigationScreen {
-    HOME, LIBRARY, MIRACLES, DICTIONARY, SEARCH, PROFILE, READER, HISTORY, NOTES, APPEARANCE
+    HOME, LIBRARY, DICTIONARY, SEARCH, PROFILE, READER, HISTORY, NOTES, APPEARANCE
 }
 
 class MainActivity : ComponentActivity() {
@@ -277,23 +298,21 @@ class MainActivity : ComponentActivity() {
                     )
                 } else {
                     var currentScreen by remember { mutableStateOf(NavigationScreen.HOME) }
-                    val miraclesRepository = remember { com.example.data.repository.MiraclesRepository() }
-                var activeBookForReader by remember { mutableStateOf<Book?>(null) }
-                var searchScreenInitialQuery by remember { mutableStateOf("") }
+                    var activeBookForReader by remember { mutableStateOf<Book?>(null) }
+                    var searchScreenInitialQuery by remember { mutableStateOf("") }
 
-                // Keep track of primary tab screen to return back correctly
-                var lastPrimaryScreen by remember { mutableStateOf(NavigationScreen.HOME) }
+                    // Keep track of primary tab screen to return back correctly
+                    var lastPrimaryScreen by remember { mutableStateOf(NavigationScreen.HOME) }
 
-                // Custom Back Pressed Handler
-                BackHandler(enabled = currentScreen != NavigationScreen.HOME) {
-                    when (currentScreen) {
-                        NavigationScreen.LIBRARY,
-                        NavigationScreen.MIRACLES,
-                        NavigationScreen.DICTIONARY,
-                        NavigationScreen.SEARCH,
-                        NavigationScreen.PROFILE -> {
-                            currentScreen = NavigationScreen.HOME
-                        }
+                    // Custom Back Pressed Handler
+                    BackHandler(enabled = currentScreen != NavigationScreen.HOME) {
+                        when (currentScreen) {
+                            NavigationScreen.LIBRARY,
+                            NavigationScreen.DICTIONARY,
+                            NavigationScreen.SEARCH,
+                            NavigationScreen.PROFILE -> {
+                                currentScreen = NavigationScreen.HOME
+                            }
                         NavigationScreen.READER -> {
                             // Back to either home, library or search depending on where we launched it
                             currentScreen = lastPrimaryScreen
@@ -312,7 +331,6 @@ class MainActivity : ComponentActivity() {
                 val showBottomBar = currentScreen in listOf(
                     NavigationScreen.HOME,
                     NavigationScreen.LIBRARY,
-                    NavigationScreen.MIRACLES,
                     NavigationScreen.DICTIONARY,
                     NavigationScreen.SEARCH,
                     NavigationScreen.PROFILE
@@ -320,210 +338,246 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    bottomBar = {
-                        if (showBottomBar) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                                    .navigationBarsPadding(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(64.dp)
-                                        .shadow(12.dp, RoundedCornerShape(32.dp), spotColor = SacredGold.copy(alpha = 0.25f)),
-                                    shape = RoundedCornerShape(32.dp),
-                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                                    tonalElevation = 8.dp,
-                                    border = androidx.compose.foundation.BorderStroke(
-                                        1.dp,
-                                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
-                                    )
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxSize(),
-                                        horizontalArrangement = Arrangement.SpaceEvenly,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        ModernNavItem(
-                                            selected = currentScreen == NavigationScreen.HOME,
-                                            icon = Icons.Filled.Home,
-                                            label = Loc.get("home", lang),
-                                            onClick = {
-                                                currentScreen = NavigationScreen.HOME
-                                                lastPrimaryScreen = NavigationScreen.HOME
-                                            },
-                                            tag = "nav_tab_home"
-                                        )
-
-                                        ModernNavItem(
-                                            selected = currentScreen == NavigationScreen.LIBRARY,
-                                            icon = Icons.Filled.AutoStories,
-                                            label = Loc.get("library", lang),
-                                            onClick = {
-                                                currentScreen = NavigationScreen.LIBRARY
-                                                lastPrimaryScreen = NavigationScreen.LIBRARY
-                                            },
-                                            tag = "nav_tab_library"
-                                        )
-
-                                        ModernNavItem(
-                                            selected = currentScreen == NavigationScreen.DICTIONARY,
-                                            icon = Icons.Filled.Book,
-                                            label = Loc.get("dictionary", lang),
-                                            onClick = {
-                                                currentScreen = NavigationScreen.DICTIONARY
-                                                lastPrimaryScreen = NavigationScreen.DICTIONARY
-                                            },
-                                            tag = "nav_tab_dictionary"
-                                        )
-
-                                        ModernNavItem(
-                                            selected = currentScreen == NavigationScreen.SEARCH,
-                                            icon = Icons.Filled.Search,
-                                            label = Loc.get("search", lang),
-                                            onClick = {
-                                                currentScreen = NavigationScreen.SEARCH
-                                                searchScreenInitialQuery = ""
-                                                lastPrimaryScreen = NavigationScreen.SEARCH
-                                            },
-                                            tag = "nav_tab_search"
-                                        )
-
-                                        ModernNavItem(
-                                            selected = currentScreen == NavigationScreen.PROFILE,
-                                            icon = Icons.Filled.Person,
-                                            label = Loc.get("profile", lang),
-                                            onClick = {
-                                                currentScreen = NavigationScreen.PROFILE
-                                                lastPrimaryScreen = NavigationScreen.PROFILE
-                                            },
-                                            tag = "nav_tab_profile"
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    containerColor = MaterialTheme.colorScheme.background
                 ) { innerPadding ->
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(innerPadding)
+                            .padding(top = innerPadding.calculateTopPadding())
                     ) {
-                        when (currentScreen) {
-                            NavigationScreen.HOME -> {
-                                HomeScreen(
-                                    viewModel = viewModel,
-                                    onNavigateToBook = { book ->
-                                        activeBookForReader = book
-                                        currentScreen = NavigationScreen.READER
-                                    },
-                                    onNavigateToSearch = { query ->
-                                        searchScreenInitialQuery = query
-                                        currentScreen = NavigationScreen.SEARCH
-                                        lastPrimaryScreen = NavigationScreen.SEARCH
-                                    },
-                                    onNavigateToSettings = {
-                                        currentScreen = NavigationScreen.APPEARANCE
-                                    }
-                                )
-                            }
-                            NavigationScreen.LIBRARY -> {
-                                LibraryScreen(
-                                    viewModel = viewModel,
-                                    onNavigateToBook = { book ->
-                                        activeBookForReader = book
-                                        currentScreen = NavigationScreen.READER
-                                    },
-                                    onNavigateToSettings = {
-                                        currentScreen = NavigationScreen.APPEARANCE
-                                    }
-                                )
-                            }
-                            NavigationScreen.MIRACLES -> {
-                                MiraclesScreen(
-                                    repository = miraclesRepository,
-                                    lang = lang,
-                                    onNavigateToSettings = {
-                                        currentScreen = NavigationScreen.APPEARANCE
-                                    }
-                                )
-                            }
-                            NavigationScreen.DICTIONARY -> {
-                                DictionaryScreen(
-                                    viewModel = viewModel,
-                                    onNavigateToSettings = {
-                                        currentScreen = NavigationScreen.APPEARANCE
-                                    }
-                                )
-                            }
-                            NavigationScreen.SEARCH -> {
-                                SearchScreen(
-                                    viewModel = viewModel,
-                                    onNavigateToBook = { book ->
-                                        activeBookForReader = book
-                                        currentScreen = NavigationScreen.READER
-                                    },
-                                    onNavigateToMiracles = {
-                                        currentScreen = NavigationScreen.MIRACLES
-                                    },
-                                    initialQuery = searchScreenInitialQuery
-                                )
-                            }
-                            NavigationScreen.PROFILE -> {
-                                ProfileScreen(
-                                    viewModel = viewModel,
-                                    onNavigateToHistory = { currentScreen = NavigationScreen.HISTORY },
-                                    onNavigateToNotes = { currentScreen = NavigationScreen.NOTES },
-                                    onNavigateToAppearance = { currentScreen = NavigationScreen.APPEARANCE }
-                                )
-                            }
-                            NavigationScreen.READER -> {
-                                activeBookForReader?.let { book ->
-                                    ReaderScreen(
-                                        viewModel = viewModel,
-                                        book = book,
-                                        onNavigateBack = {
-                                            currentScreen = lastPrimaryScreen
-                                        }
+                        // 1. Apple-style Animated Screen Switching
+                        AnimatedContent(
+                            targetState = currentScreen,
+                            transitionSpec = {
+                                (fadeIn(animationSpec = spring(stiffness = Spring.StiffnessLow)) +
+                                        scaleIn(
+                                            initialScale = 0.96f,
+                                            animationSpec = spring(stiffness = Spring.StiffnessLow)
+                                        ))
+                                    .togetherWith(
+                                        fadeOut(animationSpec = spring(stiffness = Spring.StiffnessLow)) +
+                                                scaleOut(
+                                                    targetScale = 0.96f,
+                                                    animationSpec = spring(stiffness = Spring.StiffnessLow)
+                                                )
                                     )
+                            },
+                            label = "apple_screen_switch",
+                            modifier = Modifier.fillMaxSize()
+                        ) { targetScreen ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(bottom = if (showBottomBar) 72.dp else 0.dp)
+                            ) {
+                                when (targetScreen) {
+                                    NavigationScreen.HOME -> {
+                                        HomeScreen(
+                                            viewModel = viewModel,
+                                            onNavigateToBook = { book ->
+                                                activeBookForReader = book
+                                                currentScreen = NavigationScreen.READER
+                                            },
+                                            onNavigateToSearch = { query ->
+                                                searchScreenInitialQuery = query
+                                                currentScreen = NavigationScreen.SEARCH
+                                                lastPrimaryScreen = NavigationScreen.SEARCH
+                                            },
+                                            onNavigateToSettings = {
+                                                currentScreen = NavigationScreen.APPEARANCE
+                                            }
+                                        )
+                                    }
+                                    NavigationScreen.LIBRARY -> {
+                                        LibraryScreen(
+                                            viewModel = viewModel,
+                                            onNavigateToBook = { book ->
+                                                activeBookForReader = book
+                                                currentScreen = NavigationScreen.READER
+                                            },
+                                            onNavigateToSettings = {
+                                                currentScreen = NavigationScreen.APPEARANCE
+                                            }
+                                        )
+                                    }
+                                    NavigationScreen.DICTIONARY -> {
+                                        DictionaryScreen(
+                                            viewModel = viewModel,
+                                            onNavigateToSettings = {
+                                                currentScreen = NavigationScreen.APPEARANCE
+                                            }
+                                        )
+                                    }
+                                    NavigationScreen.SEARCH -> {
+                                        SearchScreen(
+                                            viewModel = viewModel,
+                                            onNavigateToBook = { book ->
+                                                activeBookForReader = book
+                                                currentScreen = NavigationScreen.READER
+                                            },
+                                            initialQuery = searchScreenInitialQuery
+                                        )
+                                    }
+                                    NavigationScreen.PROFILE -> {
+                                        ProfileScreen(
+                                            viewModel = viewModel,
+                                            onNavigateToHistory = { currentScreen = NavigationScreen.HISTORY },
+                                            onNavigateToNotes = { currentScreen = NavigationScreen.NOTES },
+                                            onNavigateToAppearance = { currentScreen = NavigationScreen.APPEARANCE }
+                                        )
+                                    }
+                                    NavigationScreen.READER -> {
+                                        activeBookForReader?.let { book ->
+                                            ReaderScreen(
+                                                viewModel = viewModel,
+                                                book = book,
+                                                onNavigateBack = {
+                                                    currentScreen = lastPrimaryScreen
+                                                }
+                                            )
+                                        }
+                                    }
+                                    NavigationScreen.HISTORY -> {
+                                        ReadingHistoryScreen(
+                                            viewModel = viewModel,
+                                            onNavigateBack = { currentScreen = NavigationScreen.PROFILE }
+                                        )
+                                    }
+                                    NavigationScreen.NOTES -> {
+                                        NotesHighlightsScreen(
+                                            viewModel = viewModel,
+                                            onNavigateBack = { currentScreen = NavigationScreen.PROFILE }
+                                        )
+                                    }
+                                    NavigationScreen.APPEARANCE -> {
+                                        AppearanceScreen(
+                                            viewModel = viewModel,
+                                            onNavigateBack = {
+                                                if (activeBookForReader != null && lastPrimaryScreen == NavigationScreen.READER) {
+                                                    currentScreen = NavigationScreen.READER
+                                                } else {
+                                                    currentScreen = lastPrimaryScreen
+                                                }
+                                            }
+                                        )
+                                    }
                                 }
                             }
-                            NavigationScreen.HISTORY -> {
-                                ReadingHistoryScreen(
-                                    viewModel = viewModel,
-                                    onNavigateBack = { currentScreen = NavigationScreen.PROFILE }
+                        }
+
+                        // 2. Pure Floating Glass Pill Bar ("Havada Dursun Bar")
+                        AnimatedVisibility(
+                            visible = showBottomBar,
+                            enter = slideInVertically(
+                                initialOffsetY = { it },
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                    stiffness = Spring.StiffnessLow
                                 )
-                            }
-                            NavigationScreen.NOTES -> {
-                                NotesHighlightsScreen(
-                                    viewModel = viewModel,
-                                    onNavigateBack = { currentScreen = NavigationScreen.PROFILE }
+                            ) + fadeIn(),
+                            exit = slideOutVertically(
+                                targetOffsetY = { it },
+                                animationSpec = spring(stiffness = Spring.StiffnessMedium)
+                            ) + fadeOut(),
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .padding(horizontal = 18.dp, vertical = 10.dp)
+                                .navigationBarsPadding()
+                        ) {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(64.dp)
+                                    .shadow(
+                                        elevation = 16.dp,
+                                        shape = CircleShape,
+                                        spotColor = SacredGold.copy(alpha = 0.35f),
+                                        ambientColor = Color.Black.copy(alpha = 0.15f)
+                                    ),
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    Brush.linearGradient(
+                                        colors = listOf(
+                                            SacredGold.copy(alpha = 0.45f),
+                                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+                                        )
+                                    )
                                 )
-                            }
-                            NavigationScreen.APPEARANCE -> {
-                                AppearanceScreen(
-                                    viewModel = viewModel,
-                                    onNavigateBack = {
-                                        // If we came from Reader, go back to Reader, otherwise go back to Profile/Home
-                                        if (activeBookForReader != null && lastPrimaryScreen == NavigationScreen.READER) {
-                                            currentScreen = NavigationScreen.READER
-                                        } else {
-                                            currentScreen = lastPrimaryScreen
-                                        }
-                                    }
-                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 6.dp),
+                                    horizontalArrangement = Arrangement.SpaceEvenly,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    ModernNavItem(
+                                        selected = currentScreen == NavigationScreen.HOME,
+                                        icon = Icons.Filled.Home,
+                                        label = Loc.get("home", lang),
+                                        onClick = {
+                                            currentScreen = NavigationScreen.HOME
+                                            lastPrimaryScreen = NavigationScreen.HOME
+                                        },
+                                        tag = "nav_tab_home"
+                                    )
+
+                                    ModernNavItem(
+                                        selected = currentScreen == NavigationScreen.LIBRARY,
+                                        icon = Icons.Filled.AutoStories,
+                                        label = Loc.get("library", lang),
+                                        onClick = {
+                                            currentScreen = NavigationScreen.LIBRARY
+                                            lastPrimaryScreen = NavigationScreen.LIBRARY
+                                        },
+                                        tag = "nav_tab_library"
+                                    )
+
+                                    ModernNavItem(
+                                        selected = currentScreen == NavigationScreen.DICTIONARY,
+                                        icon = Icons.Filled.Book,
+                                        label = Loc.get("dictionary", lang),
+                                        onClick = {
+                                            currentScreen = NavigationScreen.DICTIONARY
+                                            lastPrimaryScreen = NavigationScreen.DICTIONARY
+                                        },
+                                        tag = "nav_tab_dictionary"
+                                    )
+
+                                    ModernNavItem(
+                                        selected = currentScreen == NavigationScreen.SEARCH,
+                                        icon = Icons.Filled.Search,
+                                        label = Loc.get("search", lang),
+                                        onClick = {
+                                            currentScreen = NavigationScreen.SEARCH
+                                            searchScreenInitialQuery = ""
+                                            lastPrimaryScreen = NavigationScreen.SEARCH
+                                        },
+                                        tag = "nav_tab_search"
+                                    )
+
+                                    ModernNavItem(
+                                        selected = currentScreen == NavigationScreen.PROFILE,
+                                        icon = Icons.Filled.Person,
+                                        label = Loc.get("profile", lang),
+                                        onClick = {
+                                            currentScreen = NavigationScreen.PROFILE
+                                            lastPrimaryScreen = NavigationScreen.PROFILE
+                                        },
+                                        tag = "nav_tab_profile"
+                                    )
+                                }
                             }
                         }
                     }
                 }
-              }
             }
         }
     }
+}
 }
 
 @Composable
@@ -537,16 +591,43 @@ private fun ModernNavItem(
     val activeColor = SacredGold
     val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
 
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.88f else if (selected) 1.05f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "nav_item_scale"
+    )
+
     val animatedBgColor by animateColorAsState(
-        targetValue = if (selected) SacredGold.copy(alpha = 0.16f) else Color.Transparent,
+        targetValue = if (selected) SacredGold.copy(alpha = 0.18f) else Color.Transparent,
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
         label = "nav_item_bg"
+    )
+
+    val iconTint by animateColorAsState(
+        targetValue = if (selected) activeColor else inactiveColor,
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "nav_item_icon_tint"
     )
 
     Box(
         modifier = Modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clip(CircleShape)
             .background(animatedBgColor)
-            .clickable(onClick = onClick)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
             .padding(horizontal = 12.dp, vertical = 6.dp)
             .testTag(tag),
         contentAlignment = Alignment.Center
@@ -558,7 +639,7 @@ private fun ModernNavItem(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = if (selected) activeColor else inactiveColor,
+                tint = iconTint,
                 modifier = Modifier.size(22.dp)
             )
             Spacer(modifier = Modifier.height(2.dp))
@@ -566,7 +647,7 @@ private fun ModernNavItem(
                 text = label,
                 fontSize = 10.sp,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                color = if (selected) activeColor else inactiveColor,
+                color = iconTint,
                 maxLines = 1
             )
         }

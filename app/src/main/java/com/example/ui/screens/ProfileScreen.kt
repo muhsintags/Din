@@ -13,6 +13,8 @@ import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,6 +30,7 @@ import coil.compose.AsyncImage
 import com.example.ui.theme.ErrorRed
 import com.example.ui.theme.SacredGold
 import com.example.ui.util.AppLanguage
+import com.example.ui.util.PrayerTimeInfo
 import com.example.ui.util.Loc
 import com.example.ui.viewmodel.ScriptureViewModel
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -44,6 +47,11 @@ fun ProfileScreen(
     val readerSettings by viewModel.readerSettings.collectAsState()
     val ctx = LocalContext.current
     val lang = readerSettings.language
+    val userReligion by viewModel.userReligion.collectAsState()
+    val userSect by viewModel.userSect.collectAsState()
+    val userLocationInfo by viewModel.userLocationInfo.collectAsState()
+    val livePrayerTimes by viewModel.livePrayerTimes.collectAsState()
+    val isLocationLoading by viewModel.isLocationLoading.collectAsState()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val selectedBooks by viewModel.selectedBooksForVerse.collectAsState()
     val currentIntervalMinutes by viewModel.notificationIntervalMinutes.collectAsState()
@@ -59,6 +67,7 @@ fun ProfileScreen(
     val userState by viewModel.userState.collectAsState()
     var showAboutDialog by remember { mutableStateOf(false) }
     var showEditProfileDialog by remember { mutableStateOf(false) }
+    var isReligionCardExpanded by rememberSaveable { mutableStateOf(false) }
 
     var tempName by remember(userState.displayName) { mutableStateOf(userState.displayName ?: "") }
     var tempBio by remember(userState.bio) { mutableStateOf(userState.bio ?: "") }
@@ -337,7 +346,11 @@ fun ProfileScreen(
             // 1. Profile Header
             item {
                 val displayName = userState.displayName ?: (if (lang == AppLanguage.EN) "Journey of Wisdom" else "Bilgelik Yolcusu")
-                val email = userState.email ?: "yolcu@scriptorium.org"
+                val email = if (userState.isDemo || userState.email == "misafir@scriptorium.org") {
+                    if (lang == AppLanguage.EN) "Guest / Offline Reader" else "Misafir / Çevrimdışı Okuyucu"
+                } else {
+                    userState.email ?: "yolcu@scriptorium.org"
+                }
                 val initials = displayName.split(" ")
                     .filter { it.isNotBlank() }
                     .map { it.first().uppercase() }
@@ -721,6 +734,261 @@ fun ProfileScreen(
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                    }
+
+                    // Religion & Sect Preferences Card (Collapsible Drawer / Accordion)
+                    Card(
+                        modifier = Modifier.fillMaxWidth().testTag("religion_sect_preferences_card"),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        border = CardDefaults.outlinedCardBorder()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Clickable Header to Expand/Collapse
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { isReligionCardExpanded = !isReligionCardExpanded },
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.SelfImprovement,
+                                        contentDescription = null,
+                                        tint = SacredGold,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Column {
+                                        Text(
+                                            text = if (lang == AppLanguage.EN) "Religion, Sect & Prayer Preferences" else "Din, Mezhep ve İbadet Ayarları",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            text = if (isReligionCardExpanded) {
+                                                if (lang == AppLanguage.EN) "Select your faith tradition to receive personalized prayer & reflection notifications." else "İnanç geleneğinizi seçerek kişiselleştirilmiş namaz, dua ve tefekkür bildirimleri alın."
+                                            } else {
+                                                "${if (lang == AppLanguage.EN) "Selected" else "Seçili"}: ${userReligion.getTitle(lang)} • ${userSect.getTitle(lang)}"
+                                            },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (isReligionCardExpanded) MaterialTheme.colorScheme.onSurfaceVariant else SacredGold,
+                                            fontWeight = if (!isReligionCardExpanded) FontWeight.SemiBold else FontWeight.Normal
+                                        )
+                                    }
+                                }
+
+                                Icon(
+                                    imageVector = if (isReligionCardExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                    contentDescription = if (isReligionCardExpanded) "Daralt" else "Genişlet",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+
+                            AnimatedVisibility(visible = isReligionCardExpanded) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                                    // 1. Religion Selector
+                                    Text(
+                                        text = if (lang == AppLanguage.EN) "SELECT RELIGION" else "DİN SEÇİMİ",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        letterSpacing = 1.sp
+                                    )
+
+                                    androidx.compose.foundation.lazy.LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        val allReligions = com.example.ui.util.UserReligion.values()
+                                        items(allReligions.size) { index ->
+                                            val religion = allReligions[index]
+                                            val isSelected = userReligion == religion
+                                            FilterChip(
+                                                selected = isSelected,
+                                                onClick = { viewModel.setUserReligion(religion) },
+                                                label = { Text(religion.getTitle(lang)) },
+                                                leadingIcon = if (isSelected) {
+                                                    { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                                } else null,
+                                                colors = FilterChipDefaults.filterChipColors(
+                                                    selectedContainerColor = SacredGold.copy(alpha = 0.2f),
+                                                    selectedLabelColor = SacredGold
+                                                )
+                                            )
+                                        }
+                                    }
+
+                                    // 2. Sect / Denomination Selector
+                                    Text(
+                                        text = if (lang == AppLanguage.EN) "SELECT SECT / TRADITION" else "MEZHEP / GELENEK SEÇİMİ",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        letterSpacing = 1.sp
+                                    )
+
+                                    val sectsForCurrentReligion = com.example.ui.util.UserSect.getSectsForReligion(userReligion)
+                                    androidx.compose.foundation.lazy.LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        items(sectsForCurrentReligion.size) { index ->
+                                            val sect = sectsForCurrentReligion[index]
+                                            val isSelected = userSect == sect
+                                            FilterChip(
+                                                selected = isSelected,
+                                                onClick = { viewModel.setUserSect(sect) },
+                                                label = { Text(sect.getTitle(lang)) },
+                                                leadingIcon = if (isSelected) {
+                                                    { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                                } else null
+                                            )
+                                        }
+                                    }
+
+                                    // 3. Location & Live API Status Bar
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(
+                                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                                shape = RoundedCornerShape(8.dp)
+                                            )
+                                            .padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Filled.LocationOn,
+                                                contentDescription = null,
+                                                tint = SacredGold,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Column {
+                                                Text(
+                                                    text = if (userLocationInfo != null) "${userLocationInfo?.cityName}, ${userLocationInfo?.countryName}" else if (lang == AppLanguage.EN) "Detecting Location..." else "Konum Tespit Ediliyor...",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Text(
+                                                    text = if (userLocationInfo != null) "${if (lang == AppLanguage.EN) "Source" else "Kaynak"}: ${userLocationInfo?.source} • ${if (lang == AppLanguage.EN) "Live Prayer API Active" else "Canlı Vakit API Aktif"}" else if (lang == AppLanguage.EN) "GPS & Network Geolocation" else "GPS ve Otomatik Ağ Konumu",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+
+                                        IconButton(
+                                            onClick = { viewModel.refreshLocationAndPrayerTimes() },
+                                            enabled = !isLocationLoading
+                                        ) {
+                                            if (isLocationLoading) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(18.dp),
+                                                    color = SacredGold,
+                                                    strokeWidth = 2.dp
+                                                )
+                                            } else {
+                                                Icon(
+                                                    imageVector = Icons.Filled.Refresh,
+                                                    contentDescription = "Yenile",
+                                                    tint = SacredGold
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // 4. Prayer / Worship Schedule Overview
+                                    Text(
+                                        text = if (lang == AppLanguage.EN) "PRAYER & WORSHIP SCHEDULE" else "İBADET & NAMAZ VAKİTLERİ ÇİZELGESİ",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        letterSpacing = 1.sp
+                                    )
+
+                                    val schedules = if (livePrayerTimes.isNotEmpty()) livePrayerTimes else com.example.ui.util.FaithPrayerSchedule.getPrayerSchedules(userReligion, userSect)
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(
+                                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                                shape = RoundedCornerShape(8.dp)
+                                            )
+                                            .padding(12.dp)
+                                    ) {
+                                        schedules.forEach { prayer ->
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Filled.AccessTime,
+                                                        contentDescription = null,
+                                                        tint = SacredGold,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                    Text(
+                                                        text = prayer.getName(lang),
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                }
+                                                Text(
+                                                    text = prayer.timeStr,
+                                                    style = MaterialTheme.typography.labelLarge,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = SacredGold
+                                                )
+                                            }
+                                            Text(
+                                                text = prayer.getMessage(lang),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.padding(start = 24.dp)
+                                            )
+                                            if (prayer != schedules.last()) {
+                                                HorizontalDivider(
+                                                    modifier = Modifier.padding(vertical = 4.dp),
+                                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
 

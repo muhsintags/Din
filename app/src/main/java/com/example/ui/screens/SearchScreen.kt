@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.Book
 import com.example.ui.theme.SacredGold
+import com.example.ui.util.Loc
+import com.example.ui.util.AppLanguage
 import com.example.ui.viewmodel.ScriptureViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,7 +38,6 @@ import com.example.ui.viewmodel.ScriptureViewModel
 fun SearchScreen(
     viewModel: ScriptureViewModel,
     onNavigateToBook: (Book) -> Unit,
-    onNavigateToMiracles: () -> Unit = {},
     initialQuery: String = ""
 ) {
     var searchQuery by remember { mutableStateOf(initialQuery) }
@@ -48,16 +49,26 @@ fun SearchScreen(
         }
     }
 
+    val readerSettings by viewModel.readerSettings.collectAsState()
+    val lang = readerSettings.language
+
     val allBooks = viewModel.books
 
     // 1. Matching Book Metadata (title, description, etc.)
-    val matchedBooks = remember(searchQuery) {
+    val matchedBooks = remember(searchQuery, lang) {
         if (searchQuery.isBlank()) emptyList() else {
             allBooks.filter { book ->
                 book.title.contains(searchQuery, ignoreCase = true) ||
+                Loc.get(book.id, lang).contains(searchQuery, ignoreCase = true) ||
                 book.description.contains(searchQuery, ignoreCase = true) ||
                 book.category.contains(searchQuery, ignoreCase = true) ||
-                book.authorOrSource.contains(searchQuery, ignoreCase = true)
+                book.authorOrSource.contains(searchQuery, ignoreCase = true) ||
+                (searchQuery.contains("Gospel", ignoreCase = true) && book.id == "sermon") ||
+                (searchQuery.contains("İncil", ignoreCase = true) && book.id == "sermon") ||
+                (searchQuery.contains("Torah", ignoreCase = true) && book.id == "torah") ||
+                (searchQuery.contains("Tevrat", ignoreCase = true) && book.id == "torah") ||
+                (searchQuery.contains("Quran", ignoreCase = true) && book.id == "quran") ||
+                (searchQuery.contains("Kur'an", ignoreCase = true) && book.id == "quran")
             }
         }
     }
@@ -95,9 +106,11 @@ fun SearchScreen(
 
     var expandedConceptTerm by remember { mutableStateOf<String?>(null) }
 
-    val popularConcepts = listOf(
-        "Hikmet", "Adalet", "Barış", "Merhamet", "Aydınlanma", "Hakikat"
-    )
+    val popularConcepts = if (lang == com.example.ui.util.AppLanguage.EN) {
+        listOf("Wisdom", "Justice", "Peace", "Mercy", "Enlightenment", "Truth")
+    } else {
+        listOf("Hikmet", "Adalet", "Barış", "Merhamet", "Aydınlanma", "Hakikat")
+    }
 
     Scaffold(
         topBar = {
@@ -113,7 +126,7 @@ fun SearchScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "Kutsal Metinler",
+                            text = Loc.get("all_scriptures", lang),
                             fontFamily = FontFamily.Serif,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
@@ -136,98 +149,7 @@ fun SearchScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
             contentPadding = PaddingValues(bottom = 40.dp)
         ) {
-            // 1. Miracles Feature Shortcut Banner
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 12.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable { onNavigateToMiracles() }
-                        .testTag("btn_go_to_miracles_search_top"),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, SacredGold.copy(alpha = 0.5f))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        Brush.linearGradient(
-                                            colors = listOf(SacredGold, MaterialTheme.colorScheme.primary)
-                                        )
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.AutoAwesome,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-
-                            Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "Mucizeler & Bilimsel Keşifler",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = SacredGold
-                                    ) {
-                                        Text(
-                                            text = "YENİ",
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                }
-                                Text(
-                                    text = "Instagram akışı formatında canlı mucize gönderileri, ayetler ve hashtagler",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = 11.sp,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-
-                        Icon(
-                            imageVector = Icons.Filled.ArrowForwardIos,
-                            contentDescription = "Giriş Yap",
-                            tint = SacredGold,
-                            modifier = Modifier
-                                .size(16.dp)
-                                .padding(start = 4.dp)
-                        )
-                    }
-                }
-            }
-
-            // 2. Large Search Bar (Kavram, metin veya öğreti ara...)
+            // 1. Large Search Bar (Kavram, metin veya öğreti ara...)
             item {
                 TextField(
                     value = searchQuery,

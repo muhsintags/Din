@@ -29,6 +29,7 @@ import com.example.data.model.Book
 import com.example.ui.theme.SacredGold
 import com.example.ui.util.AppLanguage
 import com.example.ui.util.Loc
+import com.example.ui.util.bounceClick
 import com.example.ui.viewmodel.ScriptureViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -149,14 +150,17 @@ fun LibraryScreen(
                                 categoryBooks.forEach { book ->
                                     val bookTitle = Loc.get(book.id, lang)
                                     val bookDescription = when (book.id) {
-                                        "quran" -> Loc.get("quran_download_promo", lang)
-                                        "torah", "gospel" -> Loc.get("bible_promo_desc", lang)
-                                        "sermon" -> if (lang == AppLanguage.EN) "Discover the cornerstone teachings of love, peace, and spirituality." else "Sevgi, barış ve maneviyatın temel öğretilerini keşfedin."
+                                        "quran" -> if (lang == AppLanguage.EN) "The holy book of Islam." else "İslam'ın kutsal kitabı."
+                                        "torah" -> if (lang == AppLanguage.EN) "The holy book of Judaism." else "Yahudiliğin kutsal kitabı."
+                                        "sermon", "gospel" -> if (lang == AppLanguage.EN) "The holy book of Christianity." else "Hristiyanlığın kutsal kitabı."
+                                        "talmud" -> if (lang == AppLanguage.EN) "Jewish oral tradition, law, and philosophy." else "Yahudi sözlü geleneği, hukuku ve felsefesi."
+                                        "bukhari" -> if (lang == AppLanguage.EN) "Primary collection of Hadith in Islamic tradition." else "İslam geleneğinde temel hadis külliyatı."
                                         else -> book.description
                                     }
                                     Card(
                                         modifier = Modifier
                                             .fillMaxWidth()
+                                            .bounceClick { onNavigateToBook(book) }
                                             .testTag("book_card_${book.id}"),
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.surface
@@ -174,6 +178,7 @@ fun LibraryScreen(
                                             // Soft book cover (2D flat elegant design)
                                             ScriptureBookCover(
                                                 bookId = book.id,
+                                                lang = lang,
                                                 modifier = Modifier
                                                     .width(60.dp)
                                                     .height(84.dp)
@@ -242,25 +247,25 @@ fun LibraryScreen(
 }
 
 @Composable
-fun ScriptureBookCover(bookId: String, modifier: Modifier = Modifier) {
+fun ScriptureBookCover(bookId: String, lang: AppLanguage = AppLanguage.EN, modifier: Modifier = Modifier) {
     val (gradient, icon, iconColor, label) = when (bookId) {
         "quran" -> Quadruple(
             androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color(0xFF0F5A32), androidx.compose.ui.graphics.Color(0xFF063B1E))),
             Icons.Filled.AutoStories,
             SacredGold,
-            "K.K"
+            if (lang == AppLanguage.EN) "QUR" else "K.K"
         )
         "torah" -> Quadruple(
             androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color(0xFF1B365D), androidx.compose.ui.graphics.Color(0xFF0F1E3D))),
             Icons.Filled.MenuBook,
             androidx.compose.ui.graphics.Color(0xFFE5A93B),
-            "TEV"
+            if (lang == AppLanguage.EN) "TOR" else "TEV"
         )
         "sermon" -> Quadruple(
             androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color(0xFF8B1E1E), androidx.compose.ui.graphics.Color(0xFF4A1010))),
             Icons.Filled.MenuBook,
             androidx.compose.ui.graphics.Color(0xFFF1C40F),
-            "İNC"
+            if (lang == AppLanguage.EN) "GOS" else "İNC"
         )
         "talmud" -> Quadruple(
             androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color(0xFF3F3B5C), androidx.compose.ui.graphics.Color(0xFF24213B))),

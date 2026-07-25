@@ -40,7 +40,7 @@ object Loc {
         "quran" to "Kur'an-ı Kerim",
         "torah" to "Tevrat (Torah)",
         "gospel" to "İncil (Gospel)",
-        "sermon" to "Dağdaki Vaaz",
+        "sermon" to "İncil",
         "bible" to "Kitab-ı Mukaddes",
         "search_hint" to "Ayet, sure, konu veya kelime ara...",
         "recent_searches" to "Son Aramalar",
@@ -61,7 +61,7 @@ object Loc {
         "all_verses_offline" to "Tüm Sureler Çevrimdışı!",
         "download_all_offline" to "Tüm Kitabı Çevrimdışı İndir",
         "quran_download_desc" to "114 surenin tamamı arapça ve türkçe mealleriyle cihaza kaydedildi. İnternetsiz okuyabilirsiniz.",
-        "quran_download_promo" to "İnternetiniz yokken bile tüm 114 sureyi arapça ve türkçe mealleriyle anında okuyabilirsiniz.",
+        "quran_download_promo" to "İslam'ın kutsal kitabı.",
         "downloading" to "İndiriliyor: %",
         "download" to "İndir",
         "meditation_timer" to "Tefekkür Zamanlayıcı",
@@ -81,7 +81,7 @@ object Loc {
         "stop_audio" to "Durdur",
         "live_api" to "Canlı API Entegrasyonu",
         "offline_cached" to "Gömülü Çevrimdışı Metin (Türkçe & Orijinal Dil)",
-        "library_promo" to "24 cilt Tevrat (Sefaria), İncil (Bible API) ve Kur'an-ı Kerim dahil kütüphanedeki kutsal metinlerin dilediğiniz bölümünü tamamen ücretsiz, anahtarsız ve sınırsız olarak anında Türkçe & Orijinal dilinde yükleyin.",
+        "library_promo" to "Kutsal kitaplar, felsefi metinler ve ikincil kaynakların kütüphanesi.",
         "welcome" to "Hoş Geldiniz",
         "guest" to "Misafir Kullanıcı",
         "notifications" to "Bildirimler",
@@ -95,11 +95,15 @@ object Loc {
         "verses" to "Ayet",
         "chapters" to "Bölüm",
         "surah" to "Sure",
-        "bible_promo_desc" to "Sefaria API entegrasyonu ile 24 ciltlik İbranice kutsal metinleri ve Kitab-ı Mukaddes dilindeki canlı akademik çevirileri tefekkür edin.",
+        "bible_promo_desc" to "Kutsal metinler ve tefekkür külliyatı.",
         "select_bible_book" to "Kitab-ı Mukaddes Kitabı Seçin",
         "search_bible_book" to "Kitap ara (örn: Matta, Yaratılış)...",
         "talmud" to "Talmud (Babil Talmudu)",
-        "bukhari" to "Sahih-i Buharî"
+        "bukhari" to "Sahih-i Buharî",
+        "quran_short" to "Kur'an",
+        "torah_short" to "Tevrat",
+        "gospel_short" to "İncil",
+        "psalms_short" to "Zebur"
     )
 
     private val en = mapOf(
@@ -137,7 +141,7 @@ object Loc {
         "quran" to "The Holy Quran",
         "torah" to "The Torah",
         "gospel" to "The Gospel",
-        "sermon" to "Sermon on the Mount",
+        "sermon" to "The Gospel",
         "bible" to "The Bible",
         "search_hint" to "Search verses, chapters, topics or words...",
         "recent_searches" to "Recent Searches",
@@ -158,7 +162,7 @@ object Loc {
         "all_verses_offline" to "All Chapters Offline!",
         "download_all_offline" to "Download Entire Book Offline",
         "quran_download_desc" to "All chapters have been saved locally with Arabic and English/Turkish translations. Read offline anytime.",
-        "quran_download_promo" to "Read all chapters instantly with translations even when you have no internet connection.",
+        "quran_download_promo" to "The holy book of Islam.",
         "downloading" to "Downloading: %",
         "download" to "Download",
         "meditation_timer" to "Meditation Timer",
@@ -178,7 +182,7 @@ object Loc {
         "stop_audio" to "Stop",
         "live_api" to "Live API Integration",
         "offline_cached" to "Embedded Offline Text (English & Original)",
-        "library_promo" to "Instantly load any section of the holy texts in the library, including the Torah (Sefaria), Bible (Bible API), and Holy Quran, completely free, keyless, and unlimited in English & Original languages.",
+        "library_promo" to "Library of sacred scriptures, philosophical texts, and secondary sources.",
         "welcome" to "Welcome",
         "guest" to "Guest Traveller",
         "notifications" to "Notifications",
@@ -192,11 +196,15 @@ object Loc {
         "verses" to "Verse",
         "chapters" to "Chapter",
         "surah" to "Surah",
-        "bible_promo_desc" to "Contemplate on Hebrew sacred texts and academic Bible API translations with interactive bilingual viewing options.",
+        "bible_promo_desc" to "Sacred texts and spiritual scriptures.",
         "select_bible_book" to "Select Bible Book",
         "search_bible_book" to "Search book (e.g., Matthew, Genesis)...",
         "talmud" to "Talmud (Babylonian)",
-        "bukhari" to "Sahih al-Bukhari"
+        "bukhari" to "Sahih al-Bukhari",
+        "quran_short" to "Quran",
+        "torah_short" to "Torah",
+        "gospel_short" to "Gospel",
+        "psalms_short" to "Psalms"
     )
 
     fun get(key: String, lang: AppLanguage): String {

@@ -34,6 +34,7 @@ import com.example.data.model.Book
 import com.example.ui.theme.SacredGold
 import com.example.ui.util.AppLanguage
 import com.example.ui.util.Loc
+import com.example.ui.util.bounceClick
 import com.example.ui.viewmodel.ScriptureViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -163,7 +164,7 @@ fun HomeScreen(
                                         if (isSelected) MaterialTheme.colorScheme.primaryContainer
                                         else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                     )
-                                    .clickable { viewModel.toggleVerseBookSelection(book.id) }
+                                    .bounceClick { viewModel.toggleVerseBookSelection(book.id) }
                                     .padding(horizontal = 12.dp, vertical = 6.dp)
                             ) {
                                 Row(
@@ -193,7 +194,7 @@ fun HomeScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable(enabled = !isVerseLoading) { onNavigateToBook(activeVerse.book) },
+                                .bounceClick { if (!isVerseLoading) onNavigateToBook(activeVerse.book) },
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surface
@@ -286,10 +287,10 @@ fun HomeScreen(
                     }
 
                     val traditions = listOf(
-                        Triple(Loc.get("quran", lang).split(" ").first(), Icons.Filled.AutoStories, "Kur'an-ı Kerim"),
-                        Triple(Loc.get("torah", lang).split(" ").first(), Icons.Filled.MenuBook, "Tevrat"),
-                        Triple(Loc.get("gospel", lang).split(" ").first(), Icons.Filled.HistoryEdu, "İncil"),
-                        Triple(if (lang == AppLanguage.EN) "Psalms" else "Zebur", Icons.Filled.Spa, "Zebur")
+                        Triple(Loc.get("quran_short", lang), Icons.Filled.AutoStories, Loc.get("quran", lang)),
+                        Triple(Loc.get("torah_short", lang), Icons.Filled.MenuBook, Loc.get("torah", lang)),
+                        Triple(Loc.get("gospel_short", lang), Icons.Filled.HistoryEdu, Loc.get("gospel", lang)),
+                        Triple(Loc.get("psalms_short", lang), Icons.Filled.Spa, Loc.get("psalms_short", lang))
                     )
 
                     Row(
@@ -301,7 +302,7 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(100.dp)
-                                    .clickable { onNavigateToSearch(query) },
+                                    .bounceClick { onNavigateToSearch(query) },
                                 colors = CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surface
                                 ),

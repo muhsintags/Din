@@ -18,6 +18,7 @@ import com.example.data.model.QuranSurah
 import com.example.data.model.QuranVerse
 import com.example.data.model.QuranSurahContent
 import com.example.data.repository.ScriptureRepository
+import com.example.ui.util.PrayerTimeInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -37,6 +38,9 @@ import java.io.IOException
 
 import com.example.ui.util.AppLanguage
 import com.example.ui.util.Loc
+import com.example.ui.util.UserReligion
+import com.example.ui.util.UserSect
+import com.example.ui.util.FaithPrayerSchedule
 
 enum class AppThemeSetting {
     LIGHT, DARK, SEPIA
@@ -55,7 +59,7 @@ data class ReaderSettings(
     val fontSizeSp: Float = 20f,
     val fontFamily: FontFamilySetting = FontFamilySetting.SERIF,
     val lineHeight: LineHeightSetting = LineHeightSetting.NORMAL,
-    val language: AppLanguage = AppLanguage.TR
+    val language: AppLanguage = AppLanguage.EN
 )
 
 data class UserState(
@@ -1820,6 +1824,23 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
     private val _selectedBooksForVerse = MutableStateFlow<Set<String>>(emptySet())
     val selectedBooksForVerse = _selectedBooksForVerse.asStateFlow()
 
+    // Religion & Sect Preferences
+    private val _userReligion = MutableStateFlow(UserReligion.ISLAM)
+    val userReligion: StateFlow<UserReligion> = _userReligion.asStateFlow()
+
+    private val _userSect = MutableStateFlow(UserSect.SUNNI)
+    val userSect: StateFlow<UserSect> = _userSect.asStateFlow()
+
+    // Location & Live Prayer API State
+    private val _userLocationInfo = MutableStateFlow<com.example.data.api.UserLocationInfo?>(null)
+    val userLocationInfo: StateFlow<com.example.data.api.UserLocationInfo?> = _userLocationInfo.asStateFlow()
+
+    private val _livePrayerTimes = MutableStateFlow<List<PrayerTimeInfo>>(emptyList())
+    val livePrayerTimes: StateFlow<List<PrayerTimeInfo>> = _livePrayerTimes.asStateFlow()
+
+    private val _isLocationLoading = MutableStateFlow(false)
+    val isLocationLoading: StateFlow<Boolean> = _isLocationLoading.asStateFlow()
+
     // Notifications status toggle
     private val _notificationsEnabled = MutableStateFlow(true)
     val notificationsEnabled = _notificationsEnabled.asStateFlow()
@@ -1873,14 +1894,14 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
         val fontSize = settingsPrefs.getFloat("font_size", 20f)
         val fontFamilyStr = settingsPrefs.getString("font_family", "SERIF") ?: "SERIF"
         val lineHeightStr = settingsPrefs.getString("line_height", "NORMAL") ?: "NORMAL"
-        val languageStr = settingsPrefs.getString("language", "TR") ?: "TR"
+        val languageStr = settingsPrefs.getString("language", "EN") ?: "EN"
 
         _readerSettings.value = ReaderSettings(
             theme = try { AppThemeSetting.valueOf(themeStr) } catch(e: Exception) { AppThemeSetting.LIGHT },
             fontSizeSp = fontSize,
             fontFamily = try { FontFamilySetting.valueOf(fontFamilyStr) } catch(e: Exception) { FontFamilySetting.SERIF },
             lineHeight = try { LineHeightSetting.valueOf(lineHeightStr) } catch(e: Exception) { LineHeightSetting.NORMAL },
-            language = try { AppLanguage.valueOf(languageStr) } catch(e: Exception) { AppLanguage.TR }
+            language = try { AppLanguage.valueOf(languageStr) } catch(e: Exception) { AppLanguage.EN }
         )
 
         // Load selected books for verse
@@ -1893,7 +1914,18 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
         } else {
             _selectedBooksForVerse.value = books.map { it.id }.toSet()
         }
+
+        // Load Religion & Sect
+        val savedReligionStr = prefs.getString("user_religion", "islam")
+        val loadedReligion = UserReligion.fromId(savedReligionStr)
+        _userReligion.value = loadedReligion
+
+        val savedSectStr = prefs.getString("user_sect", "sunni")
+        val loadedSect = UserSect.fromId(savedSectStr, loadedReligion)
+        _userSect.value = loadedSect
+
         refreshActiveVerse()
+        refreshLocationAndPrayerTimes()
     }
 
     private fun checkCurrentUser() {
@@ -2026,12 +2058,14 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private suspend fun fetchVerseFromApiWithFallback(bookId: String, fallbackBook: Book): Pair<String, String> {
+        val currentLang = _readerSettings.value.language
         return withContext(Dispatchers.IO) {
             try {
                 when (bookId) {
                     "quran" -> {
                         val randomAyah = (1..6236).random()
-                        val url = "https://api.alquran.cloud/v1/ayah/$randomAyah/tr.diyanet"
+                        val quranEdition = if (currentLang == AppLanguage.EN) "en.yusufali" else "tr.diyanet"
+                        val url = "https://api.alquran.cloud/v1/ayah/$randomAyah/$quranEdition"
                         val request = Request.Builder().url(url).build()
                         okHttpClient.newCall(request).execute().use { response ->
                             if (!response.isSuccessful) throw Exception("Quran API failure")
@@ -2040,136 +2074,154 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                             val dataObj = json.getJSONObject("data")
                             val text = dataObj.getString("text").trim()
                             val surahObj = dataObj.getJSONObject("surah")
-                            val surahName = surahObj.getString("englishName")
                             val numberInSurah = dataObj.getInt("numberInSurah")
-                            val surahTurkishName = when (surahObj.getInt("number")) {
-                                1 -> "Fâtiha"
-                                2 -> "Bakara"
-                                3 -> "Âl-i İmrân"
-                                4 -> "Nisâ"
-                                5 -> "Mâide"
-                                6 -> "En'âm"
-                                7 -> "A'râf"
-                                8 -> "Enfâl"
-                                9 -> "Tevbe"
-                                10 -> "Yûnus"
-                                11 -> "Hûd"
-                                12 -> "Yûsuf"
-                                13 -> "Ra'd"
-                                14 -> "İbrâhîm"
-                                15 -> "Hicr"
-                                16 -> "Nahl"
-                                17 -> "İsrâ"
-                                18 -> "Kehf"
-                                19 -> "Meryem"
-                                20 -> "Tâhâ"
-                                21 -> "Enbiyâ"
-                                22 -> "Hac"
-                                23 -> "Mü'minûn"
-                                24 -> "Nûr"
-                                25 -> "Furkan"
-                                26 -> "Şuarâ"
-                                27 -> "Neml"
-                                28 -> "Kasas"
-                                29 -> "Ankebût"
-                                30 -> "Rûm"
-                                31 -> "Lokmân"
-                                32 -> "Secde"
-                                33 -> "Ahzâb"
-                                34 -> "Sebe'"
-                                35 -> "Fâtır"
-                                36 -> "Yâsîn"
-                                37 -> "Sâffât"
-                                38 -> "Sâd"
-                                39 -> "Zümer"
-                                40 -> "Mü'min"
-                                41 -> "Fussilet"
-                                42 -> "Şûrâ"
-                                43 -> "Zuhruf"
-                                44 -> "Duhân"
-                                45 -> "Câsiye"
-                                46 -> "Ahkaf"
-                                47 -> "Muhammed"
-                                48 -> "Fetih"
-                                49 -> "Hucurât"
-                                50 -> "Kâf"
-                                51 -> "Zâriyât"
-                                52 -> "Tûr"
-                                53 -> "Necm"
-                                54 -> "Kamer"
-                                55 -> "Rahmân"
-                                56 -> "Vâkıa"
-                                57 -> "Hadîd"
-                                58 -> "Mücâdele"
-                                59 -> "Haşr"
-                                60 -> "Mümtehine"
-                                61 -> "Saf"
-                                62 -> "Cuma"
-                                63 -> "Münâfikûn"
-                                64 -> "Tegâbun"
-                                65 -> "Talâk"
-                                66 -> "Tahrîm"
-                                67 -> "Mülk"
-                                68 -> "Kalem"
-                                69 -> "Hâkka"
-                                70 -> "Meâric"
-                                71 -> "Nûh"
-                                72 -> "Cin"
-                                73 -> "Müzzemmil"
-                                74 -> "Müddessir"
-                                75 -> "Kıyâme"
-                                76 -> "İnsân"
-                                77 -> "Mürselât"
-                                78 -> "Nebe'"
-                                79 -> "Nâziât"
-                                80 -> "Abese"
-                                81 -> "Tekvîr"
-                                82 -> "İnfitâr"
-                                83 -> "Mutaffifîn"
-                                84 -> "İnşikâk"
-                                85 -> "Burûc"
-                                86 -> "Târık"
-                                87 -> "A'lâ"
-                                88 -> "Gâşiye"
-                                89 -> "Fecr"
-                                90 -> "Beled"
-                                91 -> "Şems"
-                                92 -> "Leyl"
-                                93 -> "Duhâ"
-                                94 -> "İnşirâh"
-                                95 -> "Tîn"
-                                96 -> "Alak"
-                                97 -> "Kadir"
-                                98 -> "Beyyine"
-                                99 -> "Zilzâl"
-                                100 -> "Âdiyât"
-                                101 -> "Kâria"
-                                102 -> "Tekâsür"
-                                103 -> "Asr"
-                                104 -> "Hümeze"
-                                105 -> "Fîl"
-                                106 -> "Kureyş"
-                                107 -> "Mâûn"
-                                108 -> "Kevser"
-                                109 -> "Kâfirûn"
-                                110 -> "Nasr"
-                                111 -> "Mesed"
-                                112 -> "İhlâs"
-                                113 -> "Felak"
-                                114 -> "Nâs"
-                                else -> surahName
+                            val surahName = if (currentLang == AppLanguage.EN) {
+                                surahObj.getString("englishName")
+                            } else {
+                                when (surahObj.getInt("number")) {
+                                    1 -> "Fâtiha"
+                                    2 -> "Bakara"
+                                    3 -> "Âl-i İmrân"
+                                    4 -> "Nisâ"
+                                    5 -> "Mâide"
+                                    6 -> "En'âm"
+                                    7 -> "A'râf"
+                                    8 -> "Enfâl"
+                                    9 -> "Tevbe"
+                                    10 -> "Yûnus"
+                                    11 -> "Hûd"
+                                    12 -> "Yûsuf"
+                                    13 -> "Ra'd"
+                                    14 -> "İbrâhîm"
+                                    15 -> "Hicr"
+                                    16 -> "Nahl"
+                                    17 -> "İsrâ"
+                                    18 -> "Kehf"
+                                    19 -> "Meryem"
+                                    20 -> "Tâhâ"
+                                    21 -> "Enbiyâ"
+                                    22 -> "Hac"
+                                    23 -> "Mü'minûn"
+                                    24 -> "Nûr"
+                                    25 -> "Furkan"
+                                    26 -> "Şuarâ"
+                                    27 -> "Neml"
+                                    28 -> "Kasas"
+                                    29 -> "Ankebût"
+                                    30 -> "Rûm"
+                                    31 -> "Lokmân"
+                                    32 -> "Secde"
+                                    33 -> "Ahzâb"
+                                    34 -> "Sebe'"
+                                    35 -> "Fâtır"
+                                    36 -> "Yâsîn"
+                                    37 -> "Sâffât"
+                                    38 -> "Sâd"
+                                    39 -> "Zümer"
+                                    40 -> "Mü'min"
+                                    41 -> "Fussilet"
+                                    42 -> "Şûrâ"
+                                    43 -> "Zuhruf"
+                                    44 -> "Duhân"
+                                    45 -> "Câsiye"
+                                    46 -> "Ahkaf"
+                                    47 -> "Muhammed"
+                                    48 -> "Fetih"
+                                    49 -> "Hucurât"
+                                    50 -> "Kâf"
+                                    51 -> "Zâriyât"
+                                    52 -> "Tûr"
+                                    53 -> "Necm"
+                                    54 -> "Kamer"
+                                    55 -> "Rahmân"
+                                    56 -> "Vâkıa"
+                                    57 -> "Hadîd"
+                                    58 -> "Mücâdele"
+                                    59 -> "Haşr"
+                                    60 -> "Mümtehine"
+                                    61 -> "Saf"
+                                    62 -> "Cuma"
+                                    63 -> "Münâfikûn"
+                                    64 -> "Tegâbun"
+                                    65 -> "Talâk"
+                                    66 -> "Tahrîm"
+                                    67 -> "Mülk"
+                                    68 -> "Kalem"
+                                    69 -> "Hâkka"
+                                    70 -> "Meâric"
+                                    71 -> "Nûh"
+                                    72 -> "Cin"
+                                    73 -> "Müzzemmil"
+                                    74 -> "Müddessir"
+                                    75 -> "Kıyâme"
+                                    76 -> "İnsân"
+                                    77 -> "Mürselât"
+                                    78 -> "Nebe'"
+                                    79 -> "Nâziât"
+                                    80 -> "Abese"
+                                    81 -> "Tekvîr"
+                                    82 -> "İnfitâr"
+                                    83 -> "Mutaffifîn"
+                                    84 -> "İnşikâk"
+                                    85 -> "Burûc"
+                                    86 -> "Târık"
+                                    87 -> "A'lâ"
+                                    88 -> "Gâşiye"
+                                    89 -> "Fecr"
+                                    90 -> "Beled"
+                                    91 -> "Şems"
+                                    92 -> "Leyl"
+                                    93 -> "Duhâ"
+                                    94 -> "İnşirâh"
+                                    95 -> "Tîn"
+                                    96 -> "Alak"
+                                    97 -> "Kadir"
+                                    98 -> "Beyyine"
+                                    99 -> "Zilzâl"
+                                    100 -> "Âdiyât"
+                                    101 -> "Kâria"
+                                    102 -> "Tekâsür"
+                                    103 -> "Asr"
+                                    104 -> "Hümeze"
+                                    105 -> "Fîl"
+                                    106 -> "Kureyş"
+                                    107 -> "Mâûn"
+                                    108 -> "Kevser"
+                                    109 -> "Kâfirûn"
+                                    110 -> "Nasr"
+                                    111 -> "Mesed"
+                                    112 -> "İhlâs"
+                                    113 -> "Felak"
+                                    114 -> "Nâs"
+                                    else -> surahObj.getString("englishName")
+                                }
                             }
-                            Pair("$surahTurkishName Suresi, Ayet $numberInSurah", text)
+                            val ref = if (currentLang == AppLanguage.EN) {
+                                "Surah $surahName, Verse $numberInSurah"
+                            } else {
+                                "$surahName Suresi, Ayet $numberInSurah"
+                            }
+                            Pair(ref, text)
                         }
                     }
                     "torah" -> {
-                        val torahBooks = listOf(
-                            Triple("genesis", "Yaratılış", 50),
-                            Triple("exodus", "Mısır'dan Çıkış", 40),
-                            Triple("leviticus", "Levililer", 27),
-                            Triple("numbers", "Sayılar", 36),
-                            Triple("deuteronomy", "Yasanın Tekrarı", 34)
-                        )
+                        val torahBooks = if (currentLang == AppLanguage.EN) {
+                            listOf(
+                                Triple("genesis", "Genesis", 50),
+                                Triple("exodus", "Exodus", 40),
+                                Triple("leviticus", "Leviticus", 27),
+                                Triple("numbers", "Numbers", 36),
+                                Triple("deuteronomy", "Deuteronomy", 34)
+                            )
+                        } else {
+                            listOf(
+                                Triple("genesis", "Yaratılış", 50),
+                                Triple("exodus", "Mısır'dan Çıkış", 40),
+                                Triple("leviticus", "Levililer", 27),
+                                Triple("numbers", "Sayılar", 36),
+                                Triple("deuteronomy", "Yasanın Tekrarı", 34)
+                            )
+                        }
                         val selectedTorah = torahBooks.random()
                         val chapter = (1..selectedTorah.third).random()
                         val url = "https://bible-api.com/${selectedTorah.first}+$chapter"
@@ -2184,8 +2236,17 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                             val verseObj = versesJA.getJSONObject(randomIdx)
                             val englishText = verseObj.getString("text").trim()
                             val verseNum = verseObj.getInt("verse")
-                            val turkishText = translateTextGtx(englishText)
-                            Pair("${selectedTorah.second}, Bölüm $chapter:$verseNum", turkishText)
+                            val finalText = if (currentLang == AppLanguage.EN) {
+                                englishText
+                            } else {
+                                translateTextGtx(englishText, targetLang = "tr", sourceLang = "en")
+                            }
+                            val ref = if (currentLang == AppLanguage.EN) {
+                                "${selectedTorah.second}, Chapter $chapter:$verseNum"
+                            } else {
+                                "${selectedTorah.second}, Bölüm $chapter:$verseNum"
+                            }
+                            Pair(ref, finalText)
                         }
                     }
                     "sermon" -> {
@@ -2202,31 +2263,58 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                             val verseObj = versesJA.getJSONObject(randomIdx)
                             val englishText = verseObj.getString("text").trim()
                             val verseNum = verseObj.getInt("verse")
-                            val turkishText = translateTextGtx(englishText)
-                            Pair("Dağdaki Vaaz, Matta $chapter:$verseNum", turkishText)
+                            val finalText = if (currentLang == AppLanguage.EN) {
+                                englishText
+                            } else {
+                                translateTextGtx(englishText, targetLang = "tr", sourceLang = "en")
+                            }
+                            val ref = if (currentLang == AppLanguage.EN) {
+                                "The Gospel, Matthew $chapter:$verseNum"
+                            } else {
+                                "İncil, Matta $chapter:$verseNum"
+                            }
+                            Pair(ref, finalText)
                         }
                     }
-                    else -> fetchOfflineVerseForActive(fallbackBook)
+                    else -> fetchOfflineVerseForActive(fallbackBook, currentLang)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                fetchOfflineVerseForActive(fallbackBook)
+                fetchOfflineVerseForActive(fallbackBook, currentLang)
             }
         }
     }
 
-    private fun fetchOfflineVerseForActive(book: Book): Pair<String, String> {
+    private fun fetchOfflineVerseForActive(book: Book, lang: AppLanguage): Pair<String, String> {
         val paragraphs = book.paragraphs
         if (paragraphs.isEmpty()) {
-            return Pair("KUTSAL KİTAP", "Ayet içeriği bulunamadı.")
+            return Pair(
+                if (lang == AppLanguage.EN) "HOLY SCRIPTURES" else "KUTSAL KİTAP",
+                if (lang == AppLanguage.EN) "Verse content not found." else "Ayet içeriği bulunamadı."
+            )
         }
         val randomIndex = (paragraphs.indices).random()
-        val text = paragraphs[randomIndex]
-        val ref = when (book.id) {
-            "quran" -> "Fetih Suresi, Ayet ${randomIndex + 1}"
-            "torah" -> "Yaratılış, Bölüm 1:${randomIndex + 1}"
-            "sermon" -> "Dağdaki Vaaz, Matta 5:${randomIndex + 1}"
-            else -> "${book.title}, ${randomIndex + 1}"
+        val textTr = paragraphs[randomIndex]
+        val text = if (lang == AppLanguage.EN) {
+            translateTextGtx(textTr, targetLang = "en", sourceLang = "tr")
+        } else {
+            textTr
+        }
+        val bookTitle = Loc.get(book.id, lang)
+        val ref = if (lang == AppLanguage.EN) {
+            when (book.id) {
+                "quran" -> "Surah Al-Fath, Verse ${randomIndex + 1}"
+                "torah" -> "Genesis, Chapter 1:${randomIndex + 1}"
+                "sermon" -> "The Gospel, Matthew 5:${randomIndex + 1}"
+                else -> "$bookTitle, ${randomIndex + 1}"
+            }
+        } else {
+            when (book.id) {
+                "quran" -> "Fetih Suresi, Ayet ${randomIndex + 1}"
+                "torah" -> "Yaratılış, Bölüm 1:${randomIndex + 1}"
+                "sermon" -> "İncil, Matta 5:${randomIndex + 1}"
+                else -> "$bookTitle, ${randomIndex + 1}"
+            }
         }
         return Pair(ref, text)
     }
@@ -2483,6 +2571,69 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
         com.example.DailyVerseReceiver.scheduleAlarm(getApplication(), force = true)
     }
 
+    fun refreshLocationAndPrayerTimes() {
+        viewModelScope.launch {
+            _isLocationLoading.value = true
+            try {
+                val context = getApplication<Application>()
+                val loc = com.example.data.api.PrayerTimeApiService.detectLocation(context)
+                _userLocationInfo.value = loc
+
+                val times = com.example.data.api.PrayerTimeApiService.fetchPrayerTimesFromApi(
+                    latitude = loc.latitude,
+                    longitude = loc.longitude,
+                    religion = _userReligion.value,
+                    sect = _userSect.value
+                )
+                _livePrayerTimes.value = times
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                _isLocationLoading.value = false
+            }
+        }
+    }
+
+    fun setUserReligion(religion: UserReligion) {
+        _userReligion.value = religion
+        val defaultSect = UserSect.getSectsForReligion(religion).firstOrNull() ?: UserSect.SUNNI
+        _userSect.value = defaultSect
+
+        val prefs = getApplication<Application>().getSharedPreferences("scriptorium_auth", Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString("user_religion", religion.id)
+            .putString("user_sect", defaultSect.id)
+            .apply()
+
+        val context = getApplication<Application>()
+        val lang = _readerSettings.value.language
+        Toast.makeText(
+            context,
+            if (lang == AppLanguage.EN) "Religion set to ${religion.titleEn}" else "Dini tercih ${religion.titleTr} olarak güncellendi",
+            Toast.LENGTH_SHORT
+        ).show()
+
+        refreshLocationAndPrayerTimes()
+        com.example.DailyVerseReceiver.scheduleAlarm(getApplication(), force = true)
+    }
+
+    fun setUserSect(sect: UserSect) {
+        _userSect.value = sect
+        val prefs = getApplication<Application>().getSharedPreferences("scriptorium_auth", Context.MODE_PRIVATE)
+        prefs.edit().putString("user_sect", sect.id).apply()
+
+        val context = getApplication<Application>()
+        val lang = _readerSettings.value.language
+        Toast.makeText(
+            context,
+            if (lang == AppLanguage.EN) "Sect set to ${sect.titleEn}" else "Mezhep/Görüş tercihi ${sect.titleTr} olarak güncellendi",
+            Toast.LENGTH_SHORT
+        ).show()
+
+        refreshLocationAndPrayerTimes()
+        com.example.DailyVerseReceiver.scheduleAlarm(getApplication(), force = true)
+    }
+
     fun sendTestNotification() {
         viewModelScope.launch(Dispatchers.IO) {
             val context = getApplication<Application>()
@@ -2502,6 +2653,26 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             val targetBooks = if (filteredBooks.isEmpty()) books else filteredBooks
             val randomBook = targetBooks.randomOrNull() ?: books.first()
             val fetched = fetchVerseFromApiWithFallback(randomBook.id, randomBook)
+
+            val religion = _userReligion.value
+            val sect = _userSect.value
+            
+            val locationInfo = com.example.data.api.PrayerTimeApiService.detectLocation(context)
+            val schedules = com.example.data.api.PrayerTimeApiService.fetchPrayerTimesFromApi(
+                latitude = locationInfo.latitude,
+                longitude = locationInfo.longitude,
+                religion = religion,
+                sect = sect
+            )
+            val samplePrayer = schedules.randomOrNull()
+
+            val notifTitle = if (samplePrayer != null) {
+                "📍 ${locationInfo.cityName} [${sect.getTitle(lang)}] ${samplePrayer.getName(lang)} (${samplePrayer.timeStr})"
+            } else fetched.first
+
+            val notifMessage = if (samplePrayer != null) {
+                "${samplePrayer.getMessage(lang)}\n\n(${fetched.first}): ${fetched.second}"
+            } else fetched.second
             
             val channelId = "hourly_verse_channel"
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
@@ -2509,10 +2680,10 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val channel = android.app.NotificationChannel(
                     channelId,
-                    "Günün Ayetleri",
+                    "Günün Ayetleri ve İbadet Vakitleri",
                     android.app.NotificationManager.IMPORTANCE_HIGH
                 ).apply {
-                    description = "Seçilen kutsal kitaplardan saatlik ayet bildirimleri."
+                    description = "Seçilen din, mezhep ve kutsal kitaplardan ibadet/namaz vakitleri ve ayet bildirimleri."
                     enableVibration(true)
                     enableLights(true)
                     setShowBadge(true)
@@ -2532,9 +2703,9 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
 
             val notification = androidx.core.app.NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle(fetched.first)
-                .setContentText(fetched.second)
-                .setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(fetched.second))
+                .setContentTitle(notifTitle)
+                .setContentText(notifMessage)
+                .setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(notifMessage))
                 .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
                 .setDefaults(androidx.core.app.NotificationCompat.DEFAULT_ALL)
                 .setContentIntent(contentIntent)
@@ -2554,13 +2725,13 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    private fun translateTextGtx(text: String): String {
+    private fun translateTextGtx(text: String, targetLang: String = "tr", sourceLang: String = "en"): String {
         try {
             val prefix = text.substringBefore(": ")
             val verseContent = text.substringAfter(": ")
             if (verseContent.isEmpty() || verseContent == text) {
                 val encodedText = java.net.URLEncoder.encode(text, "UTF-8")
-                val url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=tr&dt=t&q=$encodedText"
+                val url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=$sourceLang&tl=$targetLang&dt=t&q=$encodedText"
                 val request = Request.Builder().url(url).build()
                 okHttpClient.newCall(request).execute().use { response ->
                     if (response.isSuccessful) {
@@ -2583,7 +2754,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             }
             
             val encodedText = java.net.URLEncoder.encode(verseContent, "UTF-8")
-            val url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=tr&dt=t&q=$encodedText"
+            val url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=$sourceLang&tl=$targetLang&dt=t&q=$encodedText"
             val request = Request.Builder().url(url).build()
             okHttpClient.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {

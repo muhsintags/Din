@@ -373,11 +373,11 @@ fun BibleReaderView(
                 ) {
                     Text(
                         text = when (book.id) {
-                            "torah" -> if (lang == AppLanguage.EN) "Live Torah Library" else "Canlı Tevrat Kütüphanesi"
-                            "sermon" -> if (lang == AppLanguage.EN) "Live Gospel Library" else "Canlı İncil Kütüphanesi"
-                            "talmud" -> if (lang == AppLanguage.EN) "Live Talmud Library" else "Canlı Talmud Kütüphanesi"
+                            "torah" -> if (lang == AppLanguage.EN) "Torah Library" else "Tevrat Kütüphanesi"
+                            "sermon" -> if (lang == AppLanguage.EN) "Gospel Library" else "İncil Kütüphanesi"
+                            "talmud" -> if (lang == AppLanguage.EN) "Talmud Library" else "Talmud Kütüphanesi"
                             "bukhari" -> if (lang == AppLanguage.EN) "Sahih al-Bukhari Library" else "Sahih-i Buharî Kütüphanesi"
-                            else -> if (lang == AppLanguage.EN) "Live Gospel Library" else "Canlı İncil Kütüphanesi"
+                            else -> if (lang == AppLanguage.EN) "Gospel Library" else "İncil Kütüphanesi"
                         },
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
@@ -386,10 +386,10 @@ fun BibleReaderView(
                     )
                     Text(
                         text = when (book.id) {
-                            "torah" -> if (lang == AppLanguage.EN) "Contemplate Hebrew scriptures and live academic translations with Sefaria API integration." else "Sefaria API entegrasyonu ile İbranice kutsal metinleri ve Kitab-ı Mukaddes dilindeki canlı akademik çevirileri tefekkür edin."
-                            "sermon" -> if (lang == AppLanguage.EN) "Read the teachings of Jesus Christ in their Greek originals and modern translations with Bible-API integration." else "Bible-API entegrasyonu ile Grekçe asılları ve yapay zekâ destekli klasik Türkçe çevirileri ile İsa Mesih'in öğretilerini okuyun."
-                            "talmud" -> if (lang == AppLanguage.EN) "Explore the Babylonian Talmud with modern commentary and parallel Aramaic text from Sefaria." else "Sefaria veritabanı aracılığıyla modern tefsirler ve paralel Aramice metinler eşliğinde Babil Talmudu'nu okuyun."
-                            "bukhari" -> if (lang == AppLanguage.EN) "Read Sahih al-Bukhari, the most authentic collection of Hadith, with English and Turkish translations." else "İslam dünyasının en sahih hadis külliyatı olan Sahih-i Buharî'yi Türkçe çevirileri ve Arapça asılları ile inceleyin."
+                            "torah" -> if (lang == AppLanguage.EN) "Contemplate Hebrew scriptures and academic translations." else "İbranice kutsal metinleri ve akademik çevirileri tefekkür edin."
+                            "sermon" -> if (lang == AppLanguage.EN) "Read the teachings of Jesus Christ in their Greek originals and modern translations." else "Grekçe asılları ve Türkçe çevirileri ile İsa Mesih'in öğretilerini okuyun."
+                            "talmud" -> if (lang == AppLanguage.EN) "Explore the Babylonian Talmud with modern commentary and parallel Aramaic text." else "Tefsirler ve paralel Aramice metinler eşliğinde Babil Talmudu'nu okuyun."
+                            "bukhari" -> if (lang == AppLanguage.EN) "Read Sahih al-Bukhari with English and Turkish translations." else "Sahih-i Buharî'yi Türkçe çevirileri ve Arapça asılları ile inceleyin."
                             else -> ""
                         },
                         style = MaterialTheme.typography.bodyMedium,

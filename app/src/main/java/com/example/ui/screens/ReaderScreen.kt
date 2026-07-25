@@ -622,7 +622,7 @@ fun ReaderScreen(
                                                   when (book.id) {
                                                       "quran" -> if (lang == AppLanguage.EN) "Holy Quran (Surah Al-Fath • English & Arabic)" else "Kur'an-ı Kerim (Fetih Suresi • Türkçe & Arapça)"
                                                       "torah" -> if (lang == AppLanguage.EN) "Torah (Genesis 1-3 • English & Hebrew)" else "Tevrat (Yaratılış 1-3 • Türkçe & İbranice)"
-                                                      "sermon" -> if (lang == AppLanguage.EN) "Gospel (Sermon on the Mount • English & Greek)" else "İncil (Dağdaki Vaaz • Türkçe & Grekçe)"
+                                                      "sermon" -> if (lang == AppLanguage.EN) "Gospel (English & Greek)" else "İncil (Türkçe & Grekçe)"
                                                       else -> if (lang == AppLanguage.EN) "Embedded Offline Text (English & Original Language)" else "Gömülü Çevrimdışı Metin (Türkçe & Orijinal Dil)"
                                                   }
                                               },

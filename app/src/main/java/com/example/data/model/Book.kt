@@ -75,7 +75,7 @@ object BookRepository {
             authorOrSource = "İncil (Matta)",
             iconName = "church",
             coverUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuDZLBLFfgfJglvrr0EJpNX0i_-RQKNKoNSaMY1kPDhn7UuXgjODkXTeF01UxWZumZjyTS0JDvfH0iC2YadTAtPekF7mw5qqPWd1vFb_ojcbVuV9hDUWAicnoXjy_iu6S8dWvAOkI8P939gqVGbRS8d_eWsrkLCj81FxRyVfyoj3wbEYaMvnZcWUnMuV90Q3vdJ7Xbt2p3x5-WuTLRP_WQVsmS8ANqNPwHXpkMweu5dRZItKVrxcMUCv6A",
-            contentTitle = "Dağdaki Vaaz",
+            contentTitle = "İncil",
             subContentTitle = "Matta 5 - 7",
             introText = SermonContent.introText,
             paragraphs = SermonContent.paragraphs,
