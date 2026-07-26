@@ -147,7 +147,7 @@ fun SearchScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
-            contentPadding = PaddingValues(bottom = 40.dp)
+            contentPadding = PaddingValues(bottom = 100.dp)
         ) {
             // 1. Large Search Bar (Kavram, metin veya öğreti ara...)
             item {

@@ -448,10 +448,10 @@ fun DictionaryScreen(
             } else {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp),
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    items(filteredTerms) { item ->
+                    items(filteredTerms, key = { it.term }) { item ->
                         val isExpanded = expandedTermId == item.term
                         val displayFont = if (readerSettings.fontFamily == FontFamilySetting.SERIF) FontFamily.Serif else FontFamily.SansSerif
 

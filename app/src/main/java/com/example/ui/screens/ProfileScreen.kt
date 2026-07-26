@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -341,7 +342,7 @@ fun ProfileScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
-            contentPadding = PaddingValues(bottom = 40.dp)
+            contentPadding = PaddingValues(bottom = 100.dp)
         ) {
             // 1. Profile Header
             item {
@@ -888,17 +889,21 @@ fun ProfileScreen(
                                                 tint = SacredGold,
                                                 modifier = Modifier.size(20.dp)
                                             )
-                                            Column {
+                                            Column(modifier = Modifier.weight(1f)) {
                                                 Text(
                                                     text = if (userLocationInfo != null) "${userLocationInfo?.cityName}, ${userLocationInfo?.countryName}" else if (lang == AppLanguage.EN) "Detecting Location..." else "Konum Tespit Ediliyor...",
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = MaterialTheme.colorScheme.onSurface
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
                                                 )
                                                 Text(
                                                     text = if (userLocationInfo != null) "${if (lang == AppLanguage.EN) "Source" else "Kaynak"}: ${userLocationInfo?.source} • ${if (lang == AppLanguage.EN) "Live Prayer API Active" else "Canlı Vakit API Aktif"}" else if (lang == AppLanguage.EN) "GPS & Network Geolocation" else "GPS ve Otomatik Ağ Konumu",
                                                     style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
                                                 )
                                             }
                                         }

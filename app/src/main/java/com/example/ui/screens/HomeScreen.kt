@@ -97,7 +97,7 @@ fun HomeScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(32.dp),
-            contentPadding = PaddingValues(bottom = 40.dp)
+            contentPadding = PaddingValues(bottom = 100.dp)
         ) {
             // 1. Daily Verse (Günlük Ayet)
             item {
@@ -155,7 +155,7 @@ fun HomeScreen(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                         contentPadding = PaddingValues(horizontal = 4.dp)
                     ) {
-                        items(viewModel.books) { book ->
+                        items(viewModel.books, key = { it.id }) { book ->
                             val isSelected = selectedBooks.contains(book.id)
                             Box(
                                 modifier = Modifier
@@ -293,44 +293,105 @@ fun HomeScreen(
                         Triple(Loc.get("psalms_short", lang), Icons.Filled.Spa, Loc.get("psalms_short", lang))
                     )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        traditions.forEach { (name, icon, query) ->
-                            Card(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(100.dp)
-                                    .bounceClick { onNavigateToSearch(query) },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surface
-                                ),
-                                shape = RoundedCornerShape(8.dp),
-                                border = CardDefaults.outlinedCardBorder()
-                            ) {
-                                Column(
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            traditions.take(2).forEach { (name, icon, query) ->
+                                Card(
                                     modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(12.dp),
-                                    verticalArrangement = Arrangement.Center,
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                                        .weight(1f)
+                                        .height(80.dp)
+                                        .bounceClick { onNavigateToSearch(query) },
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surface
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = CardDefaults.outlinedCardBorder()
                                 ) {
-                                    Icon(
-                                        imageVector = icon,
-                                        contentDescription = name,
-                                        tint = MaterialTheme.colorScheme.primary,
+                                    Row(
                                         modifier = Modifier
-                                            .size(28.dp)
-                                            .padding(bottom = 8.dp)
-                                    )
-                                    Text(
-                                        text = name,
-                                        style = MaterialTheme.typography.labelLarge,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        fontWeight = FontWeight.Bold,
-                                        textAlign = TextAlign.Center
-                                    )
+                                            .fillMaxSize()
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                            modifier = Modifier.size(40.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    imageVector = icon,
+                                                    contentDescription = name,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(22.dp)
+                                                )
+                                            }
+                                        }
+                                        Text(
+                                            text = name,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            traditions.drop(2).forEach { (name, icon, query) ->
+                                Card(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(80.dp)
+                                        .bounceClick { onNavigateToSearch(query) },
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surface
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = CardDefaults.outlinedCardBorder()
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                            modifier = Modifier.size(40.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    imageVector = icon,
+                                                    contentDescription = name,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(22.dp)
+                                                )
+                                            }
+                                        }
+                                        Text(
+                                            text = name,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
                                 }
                             }
                         }
