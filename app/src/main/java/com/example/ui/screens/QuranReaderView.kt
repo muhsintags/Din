@@ -664,15 +664,17 @@ fun QuranReaderView(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Text(
-                                            text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-                                            style = MaterialTheme.typography.headlineMedium.copy(
-                                                fontFamily = FontFamily.Serif,
-                                                textAlign = TextAlign.Center,
-                                                fontSize = (24 * fontSizeMultiplier).sp
-                                            ),
-                                            color = SacredGold
-                                        )
+                                         if (readerSettings.showOriginalScript) {
+                                            Text(
+                                                text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
+                                                style = MaterialTheme.typography.headlineMedium.copy(
+                                                    fontFamily = FontFamily.Serif,
+                                                    textAlign = TextAlign.Center,
+                                                    fontSize = (24 * fontSizeMultiplier).sp
+                                                ),
+                                                color = SacredGold
+                                            )
+                                        }
                                         Text(
                                             text = if (lang == AppLanguage.EN) {
                                                 "In the name of Allah, the Entirely Merciful, the Especially Merciful."
@@ -795,20 +797,22 @@ fun QuranReaderView(
                                             }
                                         }
 
-                                        // Arabic Text
-                                        Text(
-                                            text = verse.textArabic,
-                                            style = MaterialTheme.typography.headlineSmall.copy(
-                                                fontFamily = FontFamily.Serif,
-                                                textAlign = TextAlign.Right,
-                                                lineHeight = (38 * fontSizeMultiplier).sp,
-                                                fontSize = (22 * fontSizeMultiplier).sp
-                                            ),
-                                            color = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
+                                         // Arabic Text
+                                        if (readerSettings.showOriginalScript) {
+                                            Text(
+                                                text = verse.textArabic,
+                                                style = MaterialTheme.typography.headlineSmall.copy(
+                                                    fontFamily = FontFamily.Serif,
+                                                    textAlign = TextAlign.Right,
+                                                    lineHeight = (38 * fontSizeMultiplier).sp,
+                                                    fontSize = (22 * fontSizeMultiplier).sp
+                                                ),
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
 
-                                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                                        }
 
                                         // Turkish Text
                                         Text(

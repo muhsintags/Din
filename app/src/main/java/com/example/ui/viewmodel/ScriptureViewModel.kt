@@ -59,7 +59,8 @@ data class ReaderSettings(
     val fontSizeSp: Float = 20f,
     val fontFamily: FontFamilySetting = FontFamilySetting.SERIF,
     val lineHeight: LineHeightSetting = LineHeightSetting.NORMAL,
-    val language: AppLanguage = AppLanguage.EN
+    val language: AppLanguage = AppLanguage.EN,
+    val showOriginalScript: Boolean = true
 )
 
 data class UserState(
@@ -1895,13 +1896,15 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
         val fontFamilyStr = settingsPrefs.getString("font_family", "SERIF") ?: "SERIF"
         val lineHeightStr = settingsPrefs.getString("line_height", "NORMAL") ?: "NORMAL"
         val languageStr = settingsPrefs.getString("language", "EN") ?: "EN"
+        val showOriginal = settingsPrefs.getBoolean("show_original_script", true)
 
         _readerSettings.value = ReaderSettings(
             theme = try { AppThemeSetting.valueOf(themeStr) } catch(e: Exception) { AppThemeSetting.LIGHT },
             fontSizeSp = fontSize,
             fontFamily = try { FontFamilySetting.valueOf(fontFamilyStr) } catch(e: Exception) { FontFamilySetting.SERIF },
             lineHeight = try { LineHeightSetting.valueOf(lineHeightStr) } catch(e: Exception) { LineHeightSetting.NORMAL },
-            language = try { AppLanguage.valueOf(languageStr) } catch(e: Exception) { AppLanguage.EN }
+            language = try { AppLanguage.valueOf(languageStr) } catch(e: Exception) { AppLanguage.EN },
+            showOriginalScript = showOriginal
         )
 
         // Load selected books for verse
@@ -2448,6 +2451,11 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
         refreshActiveVerse()
     }
 
+    fun updateShowOriginalScript(show: Boolean) {
+        _readerSettings.value = _readerSettings.value.copy(showOriginalScript = show)
+        saveReaderSettings()
+    }
+
     private fun saveReaderSettings() {
         val settingsPrefs = getApplication<Application>().getSharedPreferences("scriptorium_settings", Context.MODE_PRIVATE)
         val settings = _readerSettings.value
@@ -2457,6 +2465,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             .putString("font_family", settings.fontFamily.name)
             .putString("line_height", settings.lineHeight.name)
             .putString("language", settings.language.name)
+            .putBoolean("show_original_script", settings.showOriginalScript)
             .apply()
     }
 

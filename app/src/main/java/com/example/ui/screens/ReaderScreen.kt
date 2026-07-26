@@ -953,7 +953,23 @@ fun ReaderScreen(
                                 }
                                 else -> {
                                     // standard turkish mode
-                                    if (isFirst && paragraphText.isNotEmpty()) {
+                                    if (readerSettings.showOriginalScript && originalText.isNotEmpty()) {
+                                        Text(
+                                            text = if (originalText.contains(": ")) originalText.substringAfter(": ") else originalText,
+                                            fontFamily = FontFamily.Serif,
+                                            fontSize = (readerSettings.fontSizeSp).sp,
+                                            lineHeight = (readerSettings.fontSizeSp * 1.5).sp,
+                                            color = SacredGold,
+                                            textAlign = origTextAlign,
+                                            fontStyle = FontStyle.Italic,
+                                            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+                                        )
+                                        HorizontalDivider(
+                                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
+                                            modifier = Modifier.padding(bottom = 8.dp)
+                                        )
+                                    }
+                                    if (isFirst && paragraphText.isNotEmpty() && !readerSettings.showOriginalScript) {
                                         val firstChar = paragraphText.take(1)
                                         val restOfText = paragraphText.drop(1)
 

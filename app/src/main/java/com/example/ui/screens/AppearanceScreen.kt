@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.LineWeight
 import androidx.compose.material.icons.filled.FontDownload
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -611,6 +612,65 @@ fun AppearanceScreen(
                             }
                         }
                     }
+                }
+            }
+
+            // 7. Orijinal Alfabeyi Göster / Original Script Card Group
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)),
+                shape = RoundedCornerShape(16.dp),
+                border = CardDefaults.outlinedCardBorder()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f).padding(end = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.MenuBook,
+                                contentDescription = null,
+                                tint = SacredGold,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = if (lang == AppLanguage.EN) "Show Original Script" else "Orijinal Alfabeyi Göster",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Text(
+                            text = if (lang == AppLanguage.EN)
+                                "Display original Arabic, Hebrew, and Greek text above translations in Quran, Torah, and Gospel."
+                            else
+                                "Kur'an, Tevrat ve İncil metinlerinde orijinal Arapça, İbranice ve Grekçe yazıları mealin üstünde gösterir.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Switch(
+                        checked = readerSettings.showOriginalScript,
+                        onCheckedChange = { viewModel.updateShowOriginalScript(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = SacredGold,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        modifier = Modifier.testTag("appearance_original_script_switch")
+                    )
                 }
             }
 

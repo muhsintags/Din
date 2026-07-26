@@ -850,7 +850,10 @@ fun BibleReaderView(
                             val customFontFamily = if (readerSettings.fontFamily == FontFamilySetting.SERIF) FontFamily.Serif else FontFamily.SansSerif
 
                             val isRtl = activeBook.originalLanguageName.contains("İbranice") ||
-                                        activeBook.originalLanguageName.contains("Hebrew")
+                                        activeBook.originalLanguageName.contains("Hebrew") ||
+                                        activeBook.originalLanguageName.contains("Arapça") ||
+                                        activeBook.originalLanguageName.contains("Arabic") ||
+                                        activeBook.originalLanguageName.contains("Aramice")
                             val origTextAlign = if (isRtl) TextAlign.Right else TextAlign.Left
 
                             val isVersePlaying = activePlayingVerseIndex == index
@@ -958,6 +961,21 @@ fun BibleReaderView(
                                             )
                                         }
                                         else -> { // "turkish"
+                                            if (readerSettings.showOriginalScript && originalText.isNotEmpty()) {
+                                                Text(
+                                                    text = if (originalText.contains(": ")) originalText.substringAfter(": ") else originalText,
+                                                    fontSize = (readerSettings.fontSizeSp).sp,
+                                                    lineHeight = (customLineHeight.value + 4).sp,
+                                                    fontFamily = customFontFamily,
+                                                    color = SacredGold,
+                                                    textAlign = origTextAlign,
+                                                    modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+                                                )
+                                                HorizontalDivider(
+                                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
+                                                    modifier = Modifier.padding(bottom = 8.dp)
+                                                )
+                                            }
                                             Text(
                                                 text = paragraphText,
                                                 fontSize = customTextSize,
