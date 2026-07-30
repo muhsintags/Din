@@ -348,7 +348,7 @@ fun ProfileScreen(
             item {
                 val displayName = userState.displayName ?: (if (lang == AppLanguage.EN) "Journey of Wisdom" else "Bilgelik Yolcusu")
                 val email = if (userState.isDemo || userState.email == "misafir@scriptorium.org") {
-                    if (lang == AppLanguage.EN) "Guest / Offline Reader" else "Misafir / Çevrimdışı Okuyucu"
+                    if (lang == AppLanguage.EN) "Guest Reader" else "Misafir Okuyucu"
                 } else {
                     userState.email ?: "yolcu@scriptorium.org"
                 }
@@ -899,7 +899,7 @@ fun ProfileScreen(
                                                     overflow = TextOverflow.Ellipsis
                                                 )
                                                 Text(
-                                                    text = if (userLocationInfo != null) "${if (lang == AppLanguage.EN) "Source" else "Kaynak"}: ${userLocationInfo?.source} • ${if (lang == AppLanguage.EN) "Live Prayer API Active" else "Canlı Vakit API Aktif"}" else if (lang == AppLanguage.EN) "GPS & Network Geolocation" else "GPS ve Otomatik Ağ Konumu",
+                                                    text = if (userLocationInfo != null) (if (lang == AppLanguage.EN) "Location-based Prayer Times" else "Konuma Göre Namaz Vakitleri") else (if (lang == AppLanguage.EN) "Otomatik Konum Tespiti" else "Otomatik Konum Tespiti"),
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                     maxLines = 1,

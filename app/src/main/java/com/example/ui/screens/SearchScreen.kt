@@ -68,7 +68,9 @@ fun SearchScreen(
                 (searchQuery.contains("Torah", ignoreCase = true) && book.id == "torah") ||
                 (searchQuery.contains("Tevrat", ignoreCase = true) && book.id == "torah") ||
                 (searchQuery.contains("Quran", ignoreCase = true) && book.id == "quran") ||
-                (searchQuery.contains("Kur'an", ignoreCase = true) && book.id == "quran")
+                (searchQuery.contains("Kur'an", ignoreCase = true) && book.id == "quran") ||
+                (searchQuery.contains("Gita", ignoreCase = true) && book.id == "gita") ||
+                (searchQuery.contains("Bhagavad", ignoreCase = true) && book.id == "gita")
             }
         }
     }
@@ -92,8 +94,10 @@ fun SearchScreen(
     val matchedDictionaryTerms = remember(searchQuery) {
         if (searchQuery.isBlank()) emptyList() else {
             DictionaryData.defaultTerms.filter { term ->
-                term.term.contains(searchQuery, ignoreCase = true) ||
-                term.origin.contains(searchQuery, ignoreCase = true) ||
+                term.termTr.contains(searchQuery, ignoreCase = true) ||
+                term.termEn.contains(searchQuery, ignoreCase = true) ||
+                term.originTr.contains(searchQuery, ignoreCase = true) ||
+                term.originEn.contains(searchQuery, ignoreCase = true) ||
                 term.meaningTr.contains(searchQuery, ignoreCase = true) ||
                 term.meaningEn.contains(searchQuery, ignoreCase = true) ||
                 term.exampleTr.contains(searchQuery, ignoreCase = true) ||
@@ -313,12 +317,12 @@ fun SearchScreen(
                         }
 
                         items(matchedDictionaryTerms) { term ->
-                            val isExpanded = expandedConceptTerm == term.term
+                            val isExpanded = expandedConceptTerm == term.termTr
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        expandedConceptTerm = if (isExpanded) null else term.term
+                                        expandedConceptTerm = if (isExpanded) null else term.termTr
                                     },
                                 colors = CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
@@ -339,13 +343,13 @@ fun SearchScreen(
                                     ) {
                                         Column {
                                             Text(
-                                                text = term.term,
+                                                text = term.term(lang),
                                                 style = MaterialTheme.typography.titleMedium,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
                                             Text(
-                                                text = term.origin,
+                                                text = term.origin(lang),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                                             )

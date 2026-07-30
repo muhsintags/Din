@@ -100,10 +100,12 @@ object Loc {
         "search_bible_book" to "Kitap ara (örn: Matta, Yaratılış)...",
         "talmud" to "Talmud (Babil Talmudu)",
         "bukhari" to "Sahih-i Buharî",
+        "gita" to "Bhagavad Gita",
         "quran_short" to "Kur'an",
         "torah_short" to "Tevrat",
         "gospel_short" to "İncil",
-        "psalms_short" to "Zebur"
+        "psalms_short" to "Zebur",
+        "gita_short" to "Gita"
     )
 
     private val en = mapOf(
@@ -201,10 +203,12 @@ object Loc {
         "search_bible_book" to "Search book (e.g., Matthew, Genesis)...",
         "talmud" to "Talmud (Babylonian)",
         "bukhari" to "Sahih al-Bukhari",
+        "gita" to "Bhagavad Gita",
         "quran_short" to "Quran",
         "torah_short" to "Torah",
         "gospel_short" to "Gospel",
-        "psalms_short" to "Psalms"
+        "psalms_short" to "Psalms",
+        "gita_short" to "Gita"
     )
 
     fun get(key: String, lang: AppLanguage): String {

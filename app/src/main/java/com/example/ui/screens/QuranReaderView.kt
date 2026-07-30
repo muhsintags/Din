@@ -299,7 +299,7 @@ fun QuranReaderView(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = if (lang == AppLanguage.EN) "Live Holy Quran API" else "Canlı Kur'an-ı Kerim API",
+                        text = if (lang == AppLanguage.EN) "Holy Quran" else "Kur'an-ı Kerim",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = SacredGold,
@@ -368,9 +368,9 @@ fun QuranReaderView(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = if (isQuranDownloaded) {
-                                        if (lang == AppLanguage.EN) "All Surahs Offline!" else "Tüm Sureler Çevrimdışı!"
+                                        if (lang == AppLanguage.EN) "All Surahs Saved!" else "Tüm Sureler Cihazda Kayıtlı!"
                                     } else {
-                                        if (lang == AppLanguage.EN) "Download Entire Book Offline" else "Tüm Kitabı Çevrimdışı İndir"
+                                        if (lang == AppLanguage.EN) "Download Entire Quran" else "Tüm Kitabı Cihaza İndir"
                                     },
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold
@@ -583,9 +583,9 @@ fun QuranReaderView(
                                                 Column {
                                                     Text(
                                                         text = if (isSurahDownloaded) {
-                                                            if (lang == AppLanguage.EN) "Available Offline" else "Çevrimdışı Kullanılabilir"
+                                                            if (lang == AppLanguage.EN) "Saved to Device" else "Cihazda Kayıtlı"
                                                         } else {
-                                                            if (lang == AppLanguage.EN) "Offline Reader & Audio" else "Çevrimdışı Okuma ve Ses"
+                                                            if (lang == AppLanguage.EN) "Audio & Reader Mode" else "Okuma ve Ses Dinleme"
                                                         },
                                                         style = MaterialTheme.typography.titleSmall,
                                                         fontWeight = FontWeight.Bold,

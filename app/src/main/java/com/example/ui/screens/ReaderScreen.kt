@@ -53,7 +53,7 @@ fun ReaderScreen(
         return
     }
 
-    if (book.id == "torah" || book.id == "sermon" || book.id == "talmud" || book.id == "bukhari") {
+    if (book.id == "torah" || book.id == "sermon" || book.id == "talmud" || book.id == "bukhari" || book.id == "gita") {
         BibleReaderView(viewModel = viewModel, book = book, onNavigateBack = onNavigateBack)
         return
     }
@@ -519,9 +519,9 @@ fun ReaderScreen(
                                     Column {
                                         Text(
                                             text = if (isDownloaded) {
-                                                if (lang == AppLanguage.EN) "Offline Mode Active" else "Çevrimdışı Mod Aktif"
+                                                if (lang == AppLanguage.EN) "Saved Chapter" else "Kayıtlı Bölüm"
                                             } else {
-                                                if (lang == AppLanguage.EN) "Offline Download Module" else "Çevrimdışı İndirme Modülü"
+                                                if (lang == AppLanguage.EN) "Download Chapter" else "Bölümü İndir"
                                             },
                                             style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.Bold,
@@ -536,9 +536,9 @@ fun ReaderScreen(
                                         } else {
                                             Text(
                                                 text = if (isDownloaded) {
-                                                    if (lang == AppLanguage.EN) "All texts and audio are ready offline on your device!" else "Tüm metin ve sesler cihazınızda çevrimdışı hazır!"
+                                                    if (lang == AppLanguage.EN) "Saved to your device for reading anytime." else "Metinler ve seslendirmeler cihazınızda kayıtlı."
                                                 } else {
-                                                    if (lang == AppLanguage.EN) "Download to listen to texts and narration without internet." else "Metinleri ve seslendirmeyi internetsiz dinlemek için indirin."
+                                                    if (lang == AppLanguage.EN) "Download to read and listen anytime." else "Metinleri ve seslendirmeyi dilediğiniz zaman okuyup dinleyin."
                                                 },
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -607,9 +607,9 @@ fun ReaderScreen(
                                       Column {
                                           Text(
                                               text = if (isAiLoaded) {
-                                                  if (lang == AppLanguage.EN) "Live & Offline Academic Resource Active" else "Canlı & Çevrimdışı Akademik Kaynak Aktif"
+                                                  if (lang == AppLanguage.EN) "Scripture Reading Active" else "Metin Okuma Hazır"
                                               } else {
-                                                  if (lang == AppLanguage.EN) "Matched with Local Resource" else "Yerel Kaynak ile Eşleşti"
+                                                  if (lang == AppLanguage.EN) "Standard Edition" else "Standart Nüsha"
                                               },
                                               style = MaterialTheme.typography.titleSmall,
                                               fontWeight = FontWeight.Bold,
@@ -623,7 +623,7 @@ fun ReaderScreen(
                                                       "quran" -> if (lang == AppLanguage.EN) "Holy Quran (Surah Al-Fath • English & Arabic)" else "Kur'an-ı Kerim (Fetih Suresi • Türkçe & Arapça)"
                                                       "torah" -> if (lang == AppLanguage.EN) "Torah (Genesis 1-3 • English & Hebrew)" else "Tevrat (Yaratılış 1-3 • Türkçe & İbranice)"
                                                       "sermon" -> if (lang == AppLanguage.EN) "Gospel (English & Greek)" else "İncil (Türkçe & Grekçe)"
-                                                      else -> if (lang == AppLanguage.EN) "Embedded Offline Text (English & Original Language)" else "Gömülü Çevrimdışı Metin (Türkçe & Orijinal Dil)"
+                                                      else -> if (lang == AppLanguage.EN) "Original Text & Translation" else "Orijinal Metin ve Meal"
                                                   }
                                               },
                                               style = MaterialTheme.typography.bodySmall,
@@ -792,6 +792,7 @@ fun ReaderScreen(
                                     "sermon" -> if (lang == AppLanguage.EN) listOf("Matthew 5", "Matthew 6", "Matthew 7") else listOf("Matta 5", "Matta 6", "Matta 7")
                                     "talmud" -> listOf("Berakhot 2a", "Shabbat 2a", "Megillah 2a")
                                     "bukhari" -> listOf("Hadith 1", "Hadith 15", "Hadith 42")
+                                    "gita" -> if (lang == AppLanguage.EN) listOf("Sankhya Yoga", "Karma Yoga", "Bhakti Yoga") else listOf("Bilgelik ve Ruh", "Karma Yoga", "Bhakti Yoga")
                                     else -> if (lang == AppLanguage.EN) listOf("Chapter 1", "Chapter 2") else listOf("Bölüm 1", "Bölüm 2")
                                 }
 

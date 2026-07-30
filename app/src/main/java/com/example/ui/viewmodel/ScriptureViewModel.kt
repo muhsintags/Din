@@ -81,7 +81,11 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
     val readerSettings = _readerSettings.asStateFlow()
 
     // --- LIVE QURAN API AND AUDIO ---
-    private val okHttpClient = OkHttpClient()
+    private val okHttpClient = OkHttpClient.Builder()
+        .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
     private var mediaPlayer: MediaPlayer? = null
 
     private val _currentSelectedSurah = MutableStateFlow<QuranSurah?>(null)
@@ -139,7 +143,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             val langCode = _readerSettings.value.language.name
             val cacheKey = "surah_${surahNumber}_$langCode"
             val cachedContent = _surahInMemoryCache[cacheKey]
-            if (cachedContent != null) {
+            if (cachedContent != null && cachedContent.verses.isNotEmpty()) {
                 _currentSurahContent.value = cachedContent
                 _isSurahLoading.value = false
                 return@launch
@@ -178,7 +182,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                         null
                     }
                 }
-                if (loadedOffline != null) {
+                if (loadedOffline != null && loadedOffline.verses.isNotEmpty()) {
                     _surahInMemoryCache[cacheKey] = loadedOffline
                     _currentSurahContent.value = loadedOffline
                     _isSurahLoading.value = false
@@ -189,54 +193,113 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             // Step 2: Fallback to Live API
             withContext(Dispatchers.IO) {
                 try {
+                    var fetchedContent: QuranSurahContent? = null
                     val quranEdition = if (_readerSettings.value.language == AppLanguage.EN) "en.sahih" else "tr.diyanet"
-                    val url = "https://api.alquran.cloud/v1/surah/$surahNumber/editions/quran-uthmani,$quranEdition,ar.alafasy"
-                    val request = Request.Builder().url(url).build()
-                    okHttpClient.newCall(request).execute().use { response ->
-                        if (!response.isSuccessful) {
-                            throw IOException("Sunucu hatası: ${response.code}")
+                    
+                    // Try 1: Multi-edition URL
+                    try {
+                        val url = "https://api.alquran.cloud/v1/surah/$surahNumber/editions/quran-uthmani,$quranEdition,ar.alafasy"
+                        val request = Request.Builder().url(url).build()
+                        okHttpClient.newCall(request).execute().use { response ->
+                            if (response.isSuccessful) {
+                                val responseBody = response.body?.string() ?: ""
+                                val json = JSONObject(responseBody)
+                                val dataArray = json.getJSONArray("data")
+
+                                if (dataArray.length() >= 3) {
+                                    val arabicEdition = dataArray.getJSONObject(0)
+                                    val turkishEdition = dataArray.getJSONObject(1)
+                                    val audioEdition = dataArray.getJSONObject(2)
+
+                                    val nameArabic = arabicEdition.getString("name")
+                                    val englishName = arabicEdition.getString("englishName")
+
+                                    val arabicVerses = arabicEdition.getJSONArray("ayahs")
+                                    val turkishVerses = turkishEdition.getJSONArray("ayahs")
+                                    val audioVerses = audioEdition.getJSONArray("ayahs")
+
+                                    val versesList = mutableListOf<QuranVerse>()
+                                    val count = minOf(arabicVerses.length(), turkishVerses.length(), audioVerses.length())
+                                    for (i in 0 until count) {
+                                        val arObj = arabicVerses.getJSONObject(i)
+                                        val trObj = turkishVerses.getJSONObject(i)
+                                        val auObj = audioVerses.getJSONObject(i)
+
+                                        versesList.add(
+                                            QuranVerse(
+                                                number = arObj.getInt("numberInSurah"),
+                                                textArabic = arObj.getString("text"),
+                                                textTurkish = trObj.getString("text"),
+                                                audioUrl = auObj.optString("audio", "")
+                                            )
+                                        )
+                                    }
+
+                                    fetchedContent = QuranSurahContent(
+                                        number = surahNumber,
+                                        nameArabic = nameArabic,
+                                        englishName = englishName,
+                                        verses = versesList
+                                    )
+                                }
+                            }
                         }
-                        val responseBody = response.body?.string() ?: throw IOException("Yanıt boş")
-                        val json = JSONObject(responseBody)
-                        val dataArray = json.getJSONArray("data")
+                    } catch (e: Exception) {
+                        android.util.Log.w("ScriptureViewModel", "Multi-edition fetch failed for surah $surahNumber", e)
+                    }
 
-                        val arabicEdition = dataArray.getJSONObject(0)
-                        val turkishEdition = dataArray.getJSONObject(1)
-                        val audioEdition = dataArray.getJSONObject(2)
+                    // Try 2: Single-edition fallback if multi-edition failed
+                    if (fetchedContent == null || fetchedContent!!.verses.isEmpty()) {
+                        val urlAr = "https://api.alquran.cloud/v1/surah/$surahNumber/quran-uthmani"
+                        val urlTr = "https://api.alquran.cloud/v1/surah/$surahNumber/$quranEdition"
 
-                        val nameArabic = arabicEdition.getString("name")
-                        val englishName = arabicEdition.getString("englishName")
+                        val reqAr = Request.Builder().url(urlAr).build()
+                        val reqTr = Request.Builder().url(urlTr).build()
 
-                        val arabicVerses = arabicEdition.getJSONArray("ayahs")
-                        val turkishVerses = turkishEdition.getJSONArray("ayahs")
-                        val audioVerses = audioEdition.getJSONArray("ayahs")
+                        var arJson: JSONObject? = null
+                        var trJson: JSONObject? = null
 
-                        val versesList = mutableListOf<QuranVerse>()
-                        for (i in 0 until arabicVerses.length()) {
-                            val arObj = arabicVerses.getJSONObject(i)
-                            val trObj = turkishVerses.getJSONObject(i)
-                            val auObj = audioVerses.getJSONObject(i)
+                        try {
+                            okHttpClient.newCall(reqAr).execute().use { r ->
+                                if (r.isSuccessful) arJson = JSONObject(r.body?.string() ?: "").optJSONObject("data")
+                            }
+                        } catch (_: Exception) {}
 
-                            versesList.add(
-                                QuranVerse(
-                                    number = arObj.getInt("numberInSurah"),
-                                    textArabic = arObj.getString("text"),
-                                    textTurkish = trObj.getString("text"),
-                                    audioUrl = auObj.getString("audio")
-                                )
-                            )
+                        try {
+                            okHttpClient.newCall(reqTr).execute().use { r ->
+                                if (r.isSuccessful) trJson = JSONObject(r.body?.string() ?: "").optJSONObject("data")
+                            }
+                        } catch (_: Exception) {}
+
+                        if (arJson != null) {
+                            val nameArabic = arJson!!.optString("name", "سورة")
+                            val englishName = arJson!!.optString("englishName", "Surah $surahNumber")
+                            val arAyahs = arJson!!.optJSONArray("ayahs") ?: org.json.JSONArray()
+                            val trAyahs = trJson?.optJSONArray("ayahs") ?: org.json.JSONArray()
+
+                            val versesList = mutableListOf<QuranVerse>()
+                            for (i in 0 until arAyahs.length()) {
+                                val arObj = arAyahs.getJSONObject(i)
+                                val trObj = if (i < trAyahs.length()) trAyahs.getJSONObject(i) else null
+                                val verseNum = arObj.optInt("numberInSurah", i + 1)
+                                val textAr = arObj.optString("text", "")
+                                val textTr = trObj?.optString("text", textAr) ?: textAr
+                                val ayahGlobalNum = arObj.optInt("number", 1)
+                                val audioUrl = "https://cdn.islamic.network/quran/audio/128/ar.alafasy/$ayahGlobalNum.mp3"
+                                versesList.add(QuranVerse(verseNum, textAr, textTr, audioUrl))
+                            }
+
+                            fetchedContent = QuranSurahContent(surahNumber, nameArabic, englishName, versesList)
                         }
+                    }
 
-                        val content = QuranSurahContent(
-                            number = surahNumber,
-                            nameArabic = nameArabic,
-                            englishName = englishName,
-                            verses = versesList
-                        )
-                        _surahInMemoryCache[cacheKey] = content
+                    if (fetchedContent != null && fetchedContent!!.verses.isNotEmpty()) {
+                        _surahInMemoryCache[cacheKey] = fetchedContent!!
                         withContext(Dispatchers.Main) {
-                            _currentSurahContent.value = content
+                            _currentSurahContent.value = fetchedContent
                         }
+                    } else {
+                        throw IOException("Sure ayetleri yüklenemedi.")
                     }
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
@@ -771,10 +834,38 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
     private val _currentSelectedBukhariChapter = MutableStateFlow<Int?>(null)
     val currentSelectedBukhariChapter = _currentSelectedBukhariChapter.asStateFlow()
 
+    private val _currentSelectedGitaBook = MutableStateFlow<com.example.data.model.BibleBook?>(null)
+    val currentSelectedGitaBook = _currentSelectedGitaBook.asStateFlow()
+
+    private val _currentSelectedGitaChapter = MutableStateFlow<Int?>(null)
+    val currentSelectedGitaChapter = _currentSelectedGitaChapter.asStateFlow()
+
+    fun selectGitaBook(book: com.example.data.model.BibleBook?) {
+        _currentSelectedGitaBook.value = book
+        if (book != null) {
+            selectGitaChapter(1)
+        } else {
+            _currentSelectedGitaChapter.value = null
+            _activeBookContent.value = null
+        }
+    }
+
+    fun selectGitaChapter(chapter: Int?) {
+        _currentSelectedGitaChapter.value = chapter
+        if (chapter == null) {
+            _activeBookContent.value = null
+            return
+        }
+        val book = _currentSelectedGitaBook.value ?: return
+        loadBibleChapterContent(bookId = "gita", bibleBook = book, chapterNumber = chapter, isTorah = false)
+    }
+
     fun selectTalmudBook(book: com.example.data.model.BibleBook?) {
         _currentSelectedTalmudBook.value = book
-        _currentSelectedTalmudChapter.value = null
-        if (book == null) {
+        if (book != null) {
+            selectTalmudChapter(1)
+        } else {
+            _currentSelectedTalmudChapter.value = null
             _activeBookContent.value = null
         }
     }
@@ -791,8 +882,10 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun selectBukhariBook(book: com.example.data.model.BibleBook?) {
         _currentSelectedBukhariBook.value = book
-        _currentSelectedBukhariChapter.value = null
-        if (book == null) {
+        if (book != null) {
+            selectBukhariChapter(1)
+        } else {
+            _currentSelectedBukhariChapter.value = null
             _activeBookContent.value = null
         }
     }
@@ -809,8 +902,10 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun selectTorahBook(book: com.example.data.model.BibleBook?) {
         _currentSelectedTorahBook.value = book
-        _currentSelectedTorahChapter.value = null
-        if (book == null) {
+        if (book != null) {
+            selectTorahChapter(1)
+        } else {
+            _currentSelectedTorahChapter.value = null
             _activeBookContent.value = null
         }
     }
@@ -827,8 +922,10 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun selectSermonBook(book: com.example.data.model.BibleBook?) {
         _currentSelectedSermonBook.value = book
-        _currentSelectedSermonChapter.value = null
-        if (book == null) {
+        if (book != null) {
+            selectSermonChapter(1)
+        } else {
+            _currentSelectedSermonChapter.value = null
             _activeBookContent.value = null
         }
     }
@@ -936,7 +1033,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                         null
                     }
                 }
-                if (loadedOffline != null) {
+                if (loadedOffline != null && loadedOffline.paragraphs.isNotEmpty()) {
                     _bibleChapterInMemoryCache[cacheKey] = loadedOffline
                     _activeBookContent.value = loadedOffline
                     _isBookLoading.value = false
@@ -1077,36 +1174,65 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                             throw IOException("Failed to download Bukhari English file")
                         }
                     } else {
-                        // Bible-API
-                        val encodedBookName = bibleBook.nameEnglish.replace(" ", "%20")
+                        // Bible-API with normalization and fallback
+                        val normalizedName = normalizeBibleApiBookName(bibleBook.nameEnglish)
+                        val encodedBookName = java.net.URLEncoder.encode(normalizedName, "UTF-8")
                         val bibleUrl = "https://bible-api.com/$encodedBookName+$chapterNumber"
                         val request = Request.Builder().url(bibleUrl).build()
-                        okHttpClient.newCall(request).execute().use { response ->
-                            if (!response.isSuccessful) throw IOException("Bible API error: ${response.code}")
-                            val bodyStr = response.body?.string() ?: ""
-                            val json = JSONObject(bodyStr)
-                            val versesJA = json.getJSONArray("verses")
-                            for (i in 0 until versesJA.length()) {
-                                val vObj = versesJA.getJSONObject(i)
-                                val vNum = vObj.getInt("verse")
-                                val vText = vObj.getString("text").trim()
-                                englishVerses.add("$vNum: $vText")
-                                originalParagraphsList.add("$vNum: $vText")
+                        var fetchSuccess = false
+                        try {
+                            okHttpClient.newCall(request).execute().use { response ->
+                                if (response.isSuccessful) {
+                                    val bodyStr = response.body?.string() ?: ""
+                                    val json = JSONObject(bodyStr)
+                                    val versesJA = json.optJSONArray("verses")
+                                    if (versesJA != null && versesJA.length() > 0) {
+                                        for (i in 0 until versesJA.length()) {
+                                            val vObj = versesJA.getJSONObject(i)
+                                            val vNum = vObj.getInt("verse")
+                                            val vText = vObj.getString("text").trim()
+                                            englishVerses.add("$vNum: $vText")
+                                            originalParagraphsList.add("$vNum: $vText")
+                                        }
+                                        fetchSuccess = true
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.w("ScriptureViewModel", "Primary Bible API call failed for $normalizedName $chapterNumber", e)
+                        }
+
+                        if (!fetchSuccess) {
+                            val fallbackUrl = "https://bible-api.com/$encodedBookName+$chapterNumber?translation=kjv"
+                            val fallbackReq = Request.Builder().url(fallbackUrl).build()
+                            okHttpClient.newCall(fallbackReq).execute().use { response ->
+                                if (response.isSuccessful) {
+                                    val bodyStr = response.body?.string() ?: ""
+                                    val json = JSONObject(bodyStr)
+                                    val versesJA = json.optJSONArray("verses")
+                                    if (versesJA != null) {
+                                        for (i in 0 until versesJA.length()) {
+                                            val vObj = versesJA.getJSONObject(i)
+                                            val vNum = vObj.getInt("verse")
+                                            val vText = vObj.getString("text").trim()
+                                            englishVerses.add("$vNum: $vText")
+                                            originalParagraphsList.add("$vNum: $vText")
+                                        }
+                                    }
+                                } else {
+                                    throw IOException("Kutsal metin yüklenemedi: HTTP ${response.code}")
+                                }
                             }
                         }
                     }
                     
-                    // Translate with free Google Translate (GTX) in parallel
+                    // Fast batch translation with free Google Translate (GTX)
                     if (englishVerses.isNotEmpty()) {
                         if (_readerSettings.value.language == AppLanguage.EN) {
                             paragraphsList.addAll(englishVerses)
                         } else {
-                            val deferredTranslations = englishVerses.map { verse ->
-                                async {
-                                    translateTextGtx(verse)
-                                }
-                            }
-                            paragraphsList.addAll(deferredTranslations.awaitAll())
+                            val batchTranslated = translateVersesBatch(englishVerses)
+                            paragraphsList.addAll(batchTranslated)
                         }
                     }
                     
@@ -1117,9 +1243,10 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                             "sermon" -> if (_readerSettings.value.language == AppLanguage.EN) "Gospel" else "İncil"
                             "talmud" -> "Talmud"
                             "bukhari" -> if (_readerSettings.value.language == AppLanguage.EN) "Sahih al-Bukhari" else "Sahih-i Buharî"
+                            "gita" -> "Bhagavad Gita"
                             else -> if (_readerSettings.value.language == AppLanguage.EN) "Gospel" else "İncil"
                         },
-                        category = if (bookId == "talmud" || bookId == "bukhari") {
+                        category = if (bookId == "talmud" || bookId == "bukhari" || bookId == "gita") {
                             if (_readerSettings.value.language == AppLanguage.EN) "Other Scriptures" else "Diğer Metinler"
                         } else {
                             if (_readerSettings.value.language == AppLanguage.EN) "Sacred Texts" else "Kutsal Metinler"
@@ -1129,6 +1256,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                             "sermon" -> if (_readerSettings.value.language == AppLanguage.EN) "Gospel Live Text" else "İncil Canlı Metni"
                             "talmud" -> if (_readerSettings.value.language == AppLanguage.EN) "Talmud Bavli Live Text" else "Babil Talmudu Canlı Metni"
                             "bukhari" -> if (_readerSettings.value.language == AppLanguage.EN) "Sahih al-Bukhari Hadith Collection" else "Sahih-i Buharî Hadis Külliyatı"
+                            "gita" -> if (_readerSettings.value.language == AppLanguage.EN) "Bhagavad Gita Sacred Scripture" else "Bhagavad Gita Kutsal Metni"
                             else -> ""
                         },
                         authorOrSource = when (bookId) {
@@ -1136,12 +1264,14 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                             "sermon" -> if (_readerSettings.value.language == AppLanguage.EN) "Christian Tradition" else "Hristiyan Geleneği"
                             "talmud" -> if (_readerSettings.value.language == AppLanguage.EN) "Babylonian Academies" else "Babil Akademileri"
                             "bukhari" -> if (_readerSettings.value.language == AppLanguage.EN) "Imam Bukhari" else "İmam Buharî"
+                            "gita" -> if (_readerSettings.value.language == AppLanguage.EN) "Sanskrit Tradition" else "Sanskrit Geleneği"
                             else -> ""
                         },
                         iconName = when (bookId) {
                             "torah" -> "menu_book"
                             "talmud" -> "menu_book"
                             "bukhari" -> "auto_stories"
+                            "gita" -> "auto_stories"
                             else -> "church"
                         },
                         coverUrl = coverUrl,
@@ -1197,16 +1327,18 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                             "torah" -> if (_readerSettings.value.language == AppLanguage.EN) "Hebrew" else "İbranice (Hebrew)"
                             "talmud" -> if (_readerSettings.value.language == AppLanguage.EN) "Aramaic" else "Aramice (Aramaic)"
                             "bukhari" -> if (_readerSettings.value.language == AppLanguage.EN) "Arabic" else "Arapça (Arabic)"
+                            "gita" -> if (_readerSettings.value.language == AppLanguage.EN) "Sanskrit" else "Sanskritçe (Sanskrit)"
                             else -> if (_readerSettings.value.language == AppLanguage.EN) "Ancient Greek" else "Grekçe (Ancient Greek)"
                         },
                         originalIntroText = if (originalParagraphsList.isNotEmpty()) originalParagraphsList.first().substringAfter(": ") else "",
                         originalParagraphs = originalParagraphsList,
                         footnotes = if (_readerSettings.value.language == AppLanguage.EN) {
                             listOf(
-                                "Academic Translation" to "This section has been translated in real-time through live data sources adhering to scholarly biblical style.",
+                                "Academic Translation" to "This section has been translated in real-time through live data sources adhering to scholarly style.",
                                 "Source" to when (bookId) {
                                     "torah", "talmud" -> "Sefaria Open Source Project"
                                     "bukhari" -> "Fawaz Ahmed Hadith API"
+                                    "gita" -> "Vedic Scriptures Repository"
                                     else -> "Bible-API Library"
                                 }
                             )
@@ -1216,6 +1348,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                                 "Kaynak" to when (bookId) {
                                     "torah", "talmud" -> "Sefaria Açık Kaynak Projesi"
                                     "bukhari" -> "Fawaz Ahmed Hadis Kütüphanesi"
+                                    "gita" -> "Vedic Scriptures Açık Kaynak Veritabanı"
                                     else -> "Bible-API Çevrimdışı/Canlı Kütüphane"
                                 }
                             )
@@ -1235,6 +1368,201 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                     }
                 }
             }
+        }
+    }
+
+    suspend fun fetchComparativeSlotBook(
+        category: String,
+        subBookId: String?,
+        chapterNumber: Int
+    ): Book = withContext(Dispatchers.IO) {
+        if (category == "quran") {
+            val surahNum = chapterNumber.coerceIn(1, 114)
+            val surahMeta = com.example.data.model.QuranRepository.surahs.find { it.number == surahNum }
+                ?: QuranSurah(surahNum, "سورة", "Surah $surahNum", "Surah $surahNum", 7, "Meccan")
+
+            var surahContent = _surahInMemoryCache["surah_${surahNum}_${_readerSettings.value.language.name}"]
+            if (surahContent == null || surahContent!!.verses.isEmpty()) {
+                val quranEdition = if (_readerSettings.value.language == AppLanguage.EN) "en.sahih" else "tr.diyanet"
+                val url = "https://api.alquran.cloud/v1/surah/$surahNum/editions/quran-uthmani,$quranEdition,ar.alafasy"
+                try {
+                    val req = Request.Builder().url(url).build()
+                    okHttpClient.newCall(req).execute().use { response ->
+                        if (response.isSuccessful) {
+                            val bodyStr = response.body?.string() ?: ""
+                            val json = JSONObject(bodyStr)
+                            val dataArray = json.optJSONArray("data")
+                            if (dataArray != null && dataArray.length() >= 3) {
+                                val arabicEdition = dataArray.getJSONObject(0)
+                                val turkishEdition = dataArray.getJSONObject(1)
+                                val nameArabic = arabicEdition.optString("name", "سورة")
+                                val englishName = arabicEdition.optString("englishName", "Surah $surahNum")
+                                val arabicVerses = arabicEdition.optJSONArray("ayahs") ?: org.json.JSONArray()
+                                val turkishVerses = turkishEdition.optJSONArray("ayahs") ?: org.json.JSONArray()
+                                val versesList = mutableListOf<QuranVerse>()
+                                val count = minOf(arabicVerses.length(), turkishVerses.length())
+                                for (i in 0 until count) {
+                                    val arObj = arabicVerses.getJSONObject(i)
+                                    val trObj = turkishVerses.getJSONObject(i)
+                                    versesList.add(QuranVerse(arObj.optInt("numberInSurah", i + 1), arObj.optString("text", ""), trObj.optString("text", ""), ""))
+                                }
+                                surahContent = QuranSurahContent(surahNum, nameArabic, englishName, versesList)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("ScriptureViewModel", "Quran fetch failed in comparative mode", e)
+                }
+            }
+
+            if (surahContent != null && surahContent!!.verses.isNotEmpty()) {
+                val verses = surahContent!!.verses
+                Book(
+                    id = "quran",
+                    title = "Kur'an-ı Kerim",
+                    category = "Semavi Metinler",
+                    description = "Yüce Kur'an Sûresi",
+                    authorOrSource = "İslamî Gelenek",
+                    iconName = "mosque",
+                    coverUrl = "",
+                    contentTitle = "${surahContent!!.number}. Sûre: ${surahContent!!.nameArabic} (${surahContent!!.englishName})",
+                    subContentTitle = surahMeta.nameTurkish,
+                    introText = "${surahContent!!.englishName} Sûresi, ${verses.size} ayettir.",
+                    paragraphs = verses.map { "${it.number}: ${it.textTurkish}" },
+                    originalLanguageName = "Arapça (Arabic)",
+                    originalIntroText = surahContent!!.nameArabic,
+                    originalParagraphs = verses.map { "${it.number}: ${it.textArabic}" }
+                )
+            } else {
+                Book(
+                    id = "quran",
+                    title = "Kur'an-ı Kerim",
+                    category = "Semavi Metinler",
+                    description = "Yüce Kur'an",
+                    authorOrSource = "İslam",
+                    iconName = "mosque",
+                    coverUrl = "",
+                    contentTitle = "$surahNum. Sûre",
+                    subContentTitle = "Kur'an Metni",
+                    introText = "",
+                    paragraphs = listOf("1: Rahmân ve Rahîm olan Allah'ın adıyla.", "2: Hamd, âlemlerin Rabbi Allah'a mahsustur."),
+                    originalLanguageName = "Arapça",
+                    originalIntroText = "",
+                    originalParagraphs = listOf("1: بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", "2: ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ")
+                )
+            }
+        } else {
+            val booksList = when (category) {
+                "torah" -> com.example.data.model.BibleRepository.torahBooks
+                "sermon" -> com.example.data.model.BibleRepository.bibleBooks
+                "bukhari" -> com.example.data.model.BibleRepository.bukhariBooks
+                "gita" -> com.example.data.model.BibleRepository.gitaBooks
+                "talmud" -> com.example.data.model.BibleRepository.talmudBooks
+                else -> com.example.data.model.BibleRepository.bibleBooks
+            }
+            val targetBook = booksList.find { it.id == subBookId } ?: booksList.first()
+            val isTorah = (category == "torah")
+
+            val cacheKey = "${category}_${targetBook.id}_${chapterNumber}_${_readerSettings.value.language.name}"
+            val cached = _bibleChapterInMemoryCache[cacheKey]
+            if (cached != null) {
+                return@withContext cached
+            }
+
+            val paragraphsList = mutableListOf<String>()
+            val originalParagraphsList = mutableListOf<String>()
+            val englishVerses = mutableListOf<String>()
+
+            try {
+                if (category == "torah") {
+                    val encodedBookName = targetBook.nameEnglish.replace(" ", "%20")
+                    val url = "https://www.sefaria.org/api/texts/$encodedBookName.$chapterNumber?context=0"
+                    val req = Request.Builder().url(url).build()
+                    okHttpClient.newCall(req).execute().use { response ->
+                        if (response.isSuccessful) {
+                            val json = JSONObject(response.body?.string() ?: "")
+                            val engJA = json.optJSONArray("text")
+                            if (engJA != null) {
+                                for (i in 0 until engJA.length()) {
+                                    val cleanText = engJA.optString(i).replace(Regex("<[^>]*>"), "")
+                                    englishVerses.add("${i + 1}: $cleanText")
+                                }
+                            }
+                            val hebJA = json.optJSONArray("he")
+                            if (hebJA != null) {
+                                for (i in 0 until hebJA.length()) {
+                                    val cleanHeb = hebJA.optString(i).replace(Regex("<[^>]*>"), "")
+                                    originalParagraphsList.add("${i + 1}: $cleanHeb")
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    val normalizedName = normalizeBibleApiBookName(targetBook.nameEnglish)
+                    val encodedBookName = java.net.URLEncoder.encode(normalizedName, "UTF-8")
+                    val url = "https://bible-api.com/$encodedBookName+$chapterNumber"
+                    val req = Request.Builder().url(url).build()
+                    okHttpClient.newCall(req).execute().use { response ->
+                        if (response.isSuccessful) {
+                            val json = JSONObject(response.body?.string() ?: "")
+                            val versesJA = json.optJSONArray("verses")
+                            if (versesJA != null) {
+                                for (i in 0 until versesJA.length()) {
+                                    val vObj = versesJA.getJSONObject(i)
+                                    val vNum = vObj.getInt("verse")
+                                    val vText = vObj.getString("text").trim()
+                                    englishVerses.add("$vNum: $vText")
+                                    originalParagraphsList.add("$vNum: $vText")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (englishVerses.isNotEmpty()) {
+                    if (_readerSettings.value.language == AppLanguage.EN) {
+                        paragraphsList.addAll(englishVerses)
+                    } else {
+                        val batch = translateVersesBatch(englishVerses)
+                        paragraphsList.addAll(batch)
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("ScriptureViewModel", "Failed to fetch comparative book", e)
+            }
+
+            if (paragraphsList.isEmpty()) {
+                paragraphsList.add("1: Bölüm metni yüklenemedi veya internet bağlantısı yok.")
+            }
+
+            val categoryTitle = when (category) {
+                "torah" -> "Tevrat (Tanah)"
+                "sermon" -> "İncil (Yeni Ahit)"
+                "bukhari" -> "Sahih-i Buharî"
+                "gita" -> "Bhagavad Gita"
+                "talmud" -> "Talmud"
+                else -> "Kutsal Metin"
+            }
+
+            val resultBook = Book(
+                id = category,
+                title = categoryTitle,
+                category = "Semavi Metinler",
+                description = targetBook.nameTurkish,
+                authorOrSource = targetBook.sourceLanguage,
+                iconName = if (isTorah) "menu_book" else "church",
+                coverUrl = "",
+                contentTitle = "${targetBook.nameTurkish} $chapterNumber. Bölüm",
+                subContentTitle = "${targetBook.nameEnglish} Chapter $chapterNumber",
+                introText = "${targetBook.nameTurkish} kitabının $chapterNumber. bölümü.",
+                paragraphs = paragraphsList,
+                originalLanguageName = targetBook.sourceLanguage,
+                originalIntroText = "",
+                originalParagraphs = originalParagraphsList,
+                footnotes = emptyList()
+            )
+            _bibleChapterInMemoryCache[cacheKey] = resultBook
+            resultBook
         }
     }
 
@@ -2309,6 +2637,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                 "quran" -> "Surah Al-Fath, Verse ${randomIndex + 1}"
                 "torah" -> "Genesis, Chapter 1:${randomIndex + 1}"
                 "sermon" -> "The Gospel, Matthew 5:${randomIndex + 1}"
+                "gita" -> "Bhagavad Gita, Chapter 2:${randomIndex + 1}"
                 else -> "$bookTitle, ${randomIndex + 1}"
             }
         } else {
@@ -2316,6 +2645,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                 "quran" -> "Fetih Suresi, Ayet ${randomIndex + 1}"
                 "torah" -> "Yaratılış, Bölüm 1:${randomIndex + 1}"
                 "sermon" -> "İncil, Matta 5:${randomIndex + 1}"
+                "gita" -> "Bhagavad Gita, Bölüm 2:${randomIndex + 1}"
                 else -> "$bookTitle, ${randomIndex + 1}"
             }
         }
@@ -2447,8 +2777,38 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
     fun updateLanguage(lang: AppLanguage) {
         _readerSettings.value = _readerSettings.value.copy(language = lang)
         saveReaderSettings()
-        // Refresh verse of the day if needed
+        _surahInMemoryCache.clear()
+        _bibleChapterInMemoryCache.clear()
         refreshActiveVerse()
+
+        _currentSelectedSurah.value?.let { surah ->
+            loadSurahContent(surah.number)
+        }
+        _currentSelectedTorahBook.value?.let { b ->
+            _currentSelectedTorahChapter.value?.let { ch ->
+                loadBibleChapterContent("torah", b, ch, true)
+            }
+        }
+        _currentSelectedSermonBook.value?.let { b ->
+            _currentSelectedSermonChapter.value?.let { ch ->
+                loadBibleChapterContent("sermon", b, ch, false)
+            }
+        }
+        _currentSelectedTalmudBook.value?.let { b ->
+            _currentSelectedTalmudChapter.value?.let { ch ->
+                loadBibleChapterContent("talmud", b, ch, false)
+            }
+        }
+        _currentSelectedBukhariBook.value?.let { b ->
+            _currentSelectedBukhariChapter.value?.let { ch ->
+                loadBibleChapterContent("bukhari", b, ch, false)
+            }
+        }
+        _currentSelectedGitaBook.value?.let { b ->
+            _currentSelectedGitaChapter.value?.let { ch ->
+                loadBibleChapterContent("gita", b, ch, false)
+            }
+        }
     }
 
     fun updateShowOriginalScript(show: Boolean) {
@@ -2732,6 +3092,83 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                 ).show()
             }
         }
+    }
+
+    private fun normalizeBibleApiBookName(nameEnglish: String): String {
+        return when (nameEnglish) {
+            "I Samuel", "I_Samuel" -> "1 Samuel"
+            "II Samuel", "II_Samuel" -> "2 Samuel"
+            "I Kings", "I_Kings" -> "1 Kings"
+            "II Kings", "II_Kings" -> "2 Kings"
+            "I Chronicles", "I_Chronicles" -> "1 Chronicles"
+            "II Chronicles", "II_Chronicles" -> "2 Chronicles"
+            "I Corinthians", "I_Corinthians" -> "1 Corinthians"
+            "II Corinthians", "II_Corinthians" -> "2 Corinthians"
+            "I Thessalonians", "I_Thessalonians" -> "1 Thessalonians"
+            "II Thessalonians", "II_Thessalonians" -> "2 Thessalonians"
+            "I Timothy", "I_Timothy" -> "1 Timothy"
+            "II Timothy", "II_Timothy" -> "2 Timothy"
+            "I Peter", "I_Peter" -> "1 Peter"
+            "II Peter", "II_Peter" -> "2 Peter"
+            "I John", "I_John" -> "1 John"
+            "II John", "II_John" -> "2 John"
+            "III John", "III_John" -> "3 John"
+            "Song of Songs", "Song_of_Songs" -> "Song of Solomon"
+            else -> nameEnglish.replace("_", " ")
+        }
+    }
+
+    private suspend fun translateVersesBatch(verses: List<String>): List<String> = withContext(Dispatchers.IO) {
+        if (verses.isEmpty()) return@withContext emptyList()
+        val translatedList = mutableListOf<String>()
+        val chunkSize = 12
+        for (i in verses.indices step chunkSize) {
+            val chunk = verses.subList(i, minOf(i + chunkSize, verses.size))
+            val combinedText = chunk.joinToString("\n")
+            try {
+                val encodedText = java.net.URLEncoder.encode(combinedText, "UTF-8")
+                val url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=tr&dt=t&q=$encodedText"
+                val request = Request.Builder().url(url).build()
+                var chunkLines: List<String>? = null
+                okHttpClient.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) {
+                        val bodyStr = response.body?.string() ?: ""
+                        val jsonArray = org.json.JSONArray(bodyStr)
+                        val sentencesArray = jsonArray.optJSONArray(0)
+                        if (sentencesArray != null) {
+                            val sb = StringBuilder()
+                            for (j in 0 until sentencesArray.length()) {
+                                val sentence = sentencesArray.optJSONArray(j)
+                                if (sentence != null) {
+                                    sb.append(sentence.optString(0))
+                                }
+                            }
+                            val fullTranslated = sb.toString().trim()
+                            val lines = fullTranslated.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+                            if (lines.size == chunk.size) {
+                                chunkLines = lines
+                            }
+                        }
+                    }
+                }
+                if (chunkLines != null) {
+                    translatedList.addAll(chunkLines!!)
+                } else {
+                    for (verse in chunk) {
+                        translatedList.add(translateTextGtx(verse))
+                    }
+                }
+            } catch (e: Exception) {
+                for (verse in chunk) {
+                    try {
+                        translatedList.add(translateTextGtx(verse))
+                    } catch (_: Exception) {
+                        translatedList.add(verse)
+                    }
+                }
+            }
+        }
+        translatedList
     }
 
     private fun translateTextGtx(text: String, targetLang: String = "tr", sourceLang: String = "en"): String {

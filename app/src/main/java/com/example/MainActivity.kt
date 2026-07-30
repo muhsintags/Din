@@ -64,6 +64,7 @@ import com.example.ui.screens.ReaderScreen
 import com.example.ui.screens.ReadingHistoryScreen
 import com.example.ui.screens.SearchScreen
 import com.example.ui.screens.DictionaryScreen
+import com.example.ui.screens.ComparativeReaderScreen
 import com.example.ui.util.Loc
 import com.example.ui.util.AppLanguage
 import com.example.ui.theme.ScriptoriumTheme
@@ -109,7 +110,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import com.example.ui.util.bounceClick
 
 enum class NavigationScreen {
-    HOME, LIBRARY, DICTIONARY, SEARCH, PROFILE, READER, HISTORY, NOTES, APPEARANCE
+    HOME, LIBRARY, DICTIONARY, SEARCH, PROFILE, READER, HISTORY, NOTES, APPEARANCE, COMPARATIVE_READER
 }
 
 class MainActivity : ComponentActivity() {
@@ -299,6 +300,7 @@ class MainActivity : ComponentActivity() {
                 } else {
                     var currentScreen by remember { mutableStateOf(NavigationScreen.HOME) }
                     var activeBookForReader by remember { mutableStateOf<Book?>(null) }
+                    var comparativeInitialBook by remember { mutableStateOf<Book?>(null) }
                     var searchScreenInitialQuery by remember { mutableStateOf("") }
 
                     // Keep track of primary tab screen to return back correctly
@@ -395,6 +397,10 @@ class MainActivity : ComponentActivity() {
                                                 activeBookForReader = book
                                                 currentScreen = NavigationScreen.READER
                                             },
+                                            onNavigateToComparativeReader = { book ->
+                                                comparativeInitialBook = book
+                                                currentScreen = NavigationScreen.COMPARATIVE_READER
+                                            },
                                             onNavigateToSettings = {
                                                 currentScreen = NavigationScreen.APPEARANCE
                                             }
@@ -441,6 +447,15 @@ class MainActivity : ComponentActivity() {
                                         ReadingHistoryScreen(
                                             viewModel = viewModel,
                                             onNavigateBack = { currentScreen = NavigationScreen.PROFILE }
+                                        )
+                                    }
+                                    NavigationScreen.COMPARATIVE_READER -> {
+                                        ComparativeReaderScreen(
+                                            viewModel = viewModel,
+                                            initialBook = comparativeInitialBook,
+                                            onNavigateBack = {
+                                                currentScreen = lastPrimaryScreen
+                                            }
                                         )
                                     }
                                     NavigationScreen.NOTES -> {

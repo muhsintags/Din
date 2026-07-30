@@ -458,7 +458,8 @@ fun HomeScreen(
                                     (hist.bookTitle.contains("Quran", ignoreCase = true) && it.id == "quran") ||
                                     (hist.bookTitle.contains("Kur'an", ignoreCase = true) && it.id == "quran") ||
                                     (hist.bookTitle.contains("Torah", ignoreCase = true) && it.id == "torah") ||
-                                    (hist.bookTitle.contains("Gospel", ignoreCase = true) && it.id == "sermon")
+                                    (hist.bookTitle.contains("Gospel", ignoreCase = true) && it.id == "sermon") ||
+                                    (hist.bookTitle.contains("Gita", ignoreCase = true) && it.id == "gita")
                                 }
                                 Card(
                                     modifier = Modifier
@@ -494,6 +495,7 @@ fun HomeScreen(
                                                     "Tevrat", "Torah" -> Loc.get("torah", lang)
                                                     "İncil", "Gospel" -> Loc.get("gospel", lang)
                                                     "Dağdaki Vaaz", "Sermon on the Mount" -> Loc.get("sermon", lang)
+                                                    "Bhagavad Gita" -> Loc.get("gita", lang)
                                                     else -> hist.bookTitle
                                                 }
                                                 Text(

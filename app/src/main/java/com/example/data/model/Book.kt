@@ -135,6 +135,23 @@ object BookRepository {
                 "Kaynak" to "İmam Buharî hadis külliyatı, Kitabu Bed'il-Vahy, 1. Hadis.",
                 "Hadis No" to "Hadis numarası 1'dir. Sahih derecesindedir."
             )
+        ),
+        Book(
+            id = "gita",
+            title = "Bhagavad Gita",
+            category = "Kutsal Metinler",
+            description = "Hinduizmin en kadim kutsal metni. Kurukshetra savaş alanında Tanrı Krishna ile Prens Arjuna arasındaki ilahi diyalog ve yaşam felsefesi.",
+            authorOrSource = "Sanskrit Geleneği",
+            iconName = "auto_stories",
+            coverUrl = "https://images.unsplash.com/photo-1609137144813-7d9921338f24",
+            contentTitle = "Bölüm 2: Sankhya Yoga",
+            subContentTitle = "Bilgelik ve Ruhun Ölümsüzlüğü",
+            introText = com.example.data.model.books.GitaContent.introText,
+            paragraphs = com.example.data.model.books.GitaContent.paragraphs,
+            footnotes = com.example.data.model.books.GitaContent.footnotes,
+            originalLanguageName = "Sanskritçe (Sanskrit)",
+            originalIntroText = "कर्मण्येवाधिकारस्ते मा फलेषु कदाचन। मा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि॥",
+            originalParagraphs = com.example.data.model.books.GitaContent.originalParagraphs
         )
     )
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
@@ -37,6 +39,7 @@ import com.example.ui.viewmodel.ScriptureViewModel
 fun LibraryScreen(
     viewModel: ScriptureViewModel,
     onNavigateToBook: (Book) -> Unit,
+    onNavigateToComparativeReader: (Book?) -> Unit = {},
     onNavigateToSettings: () -> Unit
 ) {
     val readerSettings by viewModel.readerSettings.collectAsState()
@@ -109,6 +112,85 @@ fun LibraryScreen(
                 }
             }
 
+            // COMPARATIVE READER HERO PROMO CARD
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .bounceClick { onNavigateToComparativeReader(null) }
+                        .testTag("comparative_reading_hero_card"),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = SacredGold.copy(alpha = 0.12f)
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.5.dp,
+                        SacredGold.copy(alpha = 0.6f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(CircleShape)
+                                .background(SacredGold),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.ViewAgenda,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(SacredGold.copy(alpha = 0.25f))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = if (lang == AppLanguage.EN) "NEW • 2 & 3 BOOKS MODE" else "YENİ • 2 VE 3 KİTAP MODU",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SacredGold,
+                                    fontSize = 10.sp
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (lang == AppLanguage.EN) "Comparative Reading" else "Karşılaştırmalı Okuma",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Serif,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (lang == AppLanguage.EN) "Read and compare 2 or 3 scriptures side-by-side or in parallel verse cards." else "Aynı anda 2 veya 3 kutsal metni (Kur'an, Tevrat, İncil vb.) yan yana veya paralel kartlarla okuyun.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Icon(
+                            imageVector = Icons.Filled.ChevronRight,
+                            contentDescription = null,
+                            tint = SacredGold,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            }
+
             // Group books by category
             val categories = books.map { it.category }.distinct()
 
@@ -155,6 +237,7 @@ fun LibraryScreen(
                                         "sermon", "gospel" -> if (lang == AppLanguage.EN) "The holy book of Christianity." else "Hristiyanlığın kutsal kitabı."
                                         "talmud" -> if (lang == AppLanguage.EN) "Jewish oral tradition, law, and philosophy." else "Yahudi sözlü geleneği, hukuku ve felsefesi."
                                         "bukhari" -> if (lang == AppLanguage.EN) "Primary collection of Hadith in Islamic tradition." else "İslam geleneğinde temel hadis külliyatı."
+                                        "gita" -> if (lang == AppLanguage.EN) "Sacred Hindu scripture on duty, devotion, and wisdom." else "Hindu felsefesinin görev, adanmışlık ve bilgelik metni."
                                         else -> book.description
                                     }
                                     Card(
@@ -278,6 +361,12 @@ fun ScriptureBookCover(bookId: String, lang: AppLanguage = AppLanguage.EN, modif
             Icons.Filled.AutoStories,
             SacredGold,
             "BUH"
+        )
+        "gita" -> Quadruple(
+            androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color(0xFF8C3A00), androidx.compose.ui.graphics.Color(0xFF4A1F00))),
+            Icons.Filled.SelfImprovement,
+            androidx.compose.ui.graphics.Color(0xFFFFB74D),
+            "GIT"
         )
         else -> Quadruple(
             androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color(0xFF4A5568), androidx.compose.ui.graphics.Color(0xFF2D3748))),

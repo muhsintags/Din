@@ -206,4 +206,25 @@ object BibleRepository {
         BibleBook("Holding_Fast_to_the_Quran_and_Sunnah", "Kur'an ve Sünnete Sarılmak", "Holding Fast to the Qur'an and Sunnah", 97, 96, "Arapça (Arabic)"),
         BibleBook("Oneness_Uniqueness_of_Allah_(Tawheed)", "Tevhid (Tawheed)", "Oneness, Uniqueness of Allah (Tawheed)", 188, 97, "Arapça (Arabic)"),
     )
+
+    val gitaBooks = listOf(
+        BibleBook("Arjuna_Vishada_Yoga", "1. Arjuna'nın Üzüntüsü", "1. Arjuna's Despair", 47, 1, "Sanskritçe (Sanskrit)"),
+        BibleBook("Sankhya_Yoga", "2. Bilgelik ve Ruhun Ölümsüzlüğü", "2. Transcendental Knowledge", 72, 2, "Sanskritçe (Sanskrit)"),
+        BibleBook("Karma_Yoga", "3. Eylem Yolu (Karma Yoga)", "3. Path of Selfless Action", 43, 3, "Sanskritçe (Sanskrit)"),
+        BibleBook("Jnana_Karma_Sanyasa_Yoga", "4. Bilgi ve Eylem Yolu", "4. Path of Knowledge and Action", 42, 4, "Sanskritçe (Sanskrit)"),
+        BibleBook("Karma_Sanyasa_Yoga", "5. Eylemlerin Terki", "5. Path of Renunciation", 29, 5, "Sanskritçe (Sanskrit)"),
+        BibleBook("Dhyana_Yoga", "6. Meditasyon Yolu", "6. Path of Meditation", 47, 6, "Sanskritçe (Sanskrit)"),
+        BibleBook("Jnana_Vijnana_Yoga", "7. Bilgi ve İdrak Yolu", "7. Knowledge and Wisdom", 30, 7, "Sanskritçe (Sanskrit)"),
+        BibleBook("Akshara_Brahma_Yoga", "8. Ebedi Ruh Yolu", "8. Path of the Eternal Absolute", 28, 8, "Sanskritçe (Sanskrit)"),
+        BibleBook("Raja_Vidya_Raja_Guhya_Yoga", "9. Kraliyet Bilgisi", "9. Sovereign Science & Secret", 34, 9, "Sanskritçe (Sanskrit)"),
+        BibleBook("Vibhuti_Yoga", "10. İlahi İhtişam", "10. Divine Glories", 42, 10, "Sanskritçe (Sanskrit)"),
+        BibleBook("Vishwarupa_Darsana_Yoga", "11. Evrensel Formun Görüntüsü", "11. Vision of the Universal Form", 55, 11, "Sanskritçe (Sanskrit)"),
+        BibleBook("Bhakti_Yoga", "12. Adanmışlık Yolu (Bhakti)", "12. Path of Devotion", 20, 12, "Sanskritçe (Sanskrit)"),
+        BibleBook("Kshetra_Kshetrajna_Vibhaga_Yoga", "13. Alan ve Alanı Bilen", "13. Field and Knower of the Field", 34, 13, "Sanskritçe (Sanskrit)"),
+        BibleBook("Gunatraya_Vibhaga_Yoga", "14. Üç Doğa Niteliği (Guna)", "14. Three Modes of Nature", 27, 14, "Sanskritçe (Sanskrit)"),
+        BibleBook("Purushottama_Yoga", "15. Yüce Varlık", "15. The Supreme Person", 20, 15, "Sanskritçe (Sanskrit)"),
+        BibleBook("Daivasura_Sampad_Vibhaga_Yoga", "16. İlahi ve Şeytani Doğalar", "16. Divine and Demonic Natures", 24, 16, "Sanskritçe (Sanskrit)"),
+        BibleBook("Shraddhatraya_Vibhaga_Yoga", "17. İnancın Üç Türü", "17. Three Divisions of Faith", 28, 17, "Sanskritçe (Sanskrit)"),
+        BibleBook("Moksha_Sanyasa_Yoga", "18. Aydınlanma ve Özgürleşme", "18. Liberation and Renunciation", 78, 18, "Sanskritçe (Sanskrit)")
+    )
 }

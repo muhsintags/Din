@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.SacredGold
+import com.example.ui.util.AppLanguage
 import com.example.ui.util.bounceClick
 import com.example.ui.viewmodel.ScriptureViewModel
 
@@ -39,13 +40,18 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit
 ) {
     val context = LocalContext.current
+    val readerSettings by viewModel.readerSettings.collectAsState()
+    val lang = readerSettings.language
+
     var nameInput by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
 
     fun performLogin(name: String) {
-        val finalName = name.trim().ifEmpty { "Bilgelik Yolcusu" }
+        val defaultName = if (lang == AppLanguage.EN) "Wisdom Pilgrim" else "Bilgelik Yolcusu"
+        val finalName = name.trim().ifEmpty { defaultName }
         viewModel.signInWithDemo("misafir@scriptorium.org", finalName)
-        Toast.makeText(context, "Hoş geldiniz, $finalName!", Toast.LENGTH_SHORT).show()
+        val toastText = if (lang == AppLanguage.EN) "Welcome, $finalName!" else "Hoş geldiniz, $finalName!"
+        Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show()
         onLoginSuccess()
     }
 
@@ -61,8 +67,37 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .widthIn(max = 420.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(28.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            // Language Toggle Switcher Top Bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilterChip(
+                    selected = lang == AppLanguage.EN,
+                    onClick = {
+                        val newLang = if (lang == AppLanguage.EN) AppLanguage.TR else AppLanguage.EN
+                        viewModel.updateLanguage(newLang)
+                    },
+                    label = {
+                        Text(
+                            text = if (lang == AppLanguage.EN) "🌐 English" else "🌐 Türkçe",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = SacredGold,
+                        selectedLabelColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        labelColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    shape = RoundedCornerShape(20.dp)
+                )
+            }
+
             // 1. App Header & Logo
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -85,7 +120,7 @@ fun LoginScreen(
                 }
 
                 Text(
-                    text = "Kutsal Metinler",
+                    text = if (lang == AppLanguage.EN) "Sacred Scriptures" else "Kutsal Metinler",
                     fontFamily = FontFamily.Serif,
                     fontWeight = FontWeight.Bold,
                     fontSize = 32.sp,
@@ -94,7 +129,7 @@ fun LoginScreen(
                 )
 
                 Text(
-                    text = "İnsanlığın kadim bilgelik kütüphanesine hoş geldiniz.",
+                    text = if (lang == AppLanguage.EN) "Welcome to humanity's ancient library of wisdom." else "İnsanlığın kadim bilgelik kütüphanesine hoş geldiniz.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -125,13 +160,13 @@ fun LoginScreen(
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            text = "Çevrimdışı Profil Girişi",
+                            text = if (lang == AppLanguage.EN) "Create Profile" else "Profil Oluşturun",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "Lütfen okuma deneyiminizi kişiselleştirmek için adınızı ve soyadınızı girin.",
+                            text = if (lang == AppLanguage.EN) "Enter your name to personalize your reading experience." else "Okuma deneyiminizi kişiselleştirmek için isminizi belirleyin.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -143,8 +178,8 @@ fun LoginScreen(
                             nameInput = it
                             if (showError && it.isNotBlank()) showError = false
                         },
-                        label = { Text("Ad Soyad") },
-                        placeholder = { Text("Örn: Ahmet Yılmaz") },
+                        label = { Text(if (lang == AppLanguage.EN) "Full Name" else "Ad Soyad") },
+                        placeholder = { Text(if (lang == AppLanguage.EN) "e.g., John Doe" else "Örn: Ahmet Yılmaz") },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Filled.Person,
@@ -155,7 +190,7 @@ fun LoginScreen(
                         singleLine = true,
                         isError = showError,
                         supportingText = if (showError) {
-                            { Text("Lütfen adınızı ve soyadınızı girin.") }
+                            { Text(if (lang == AppLanguage.EN) "Please enter your name." else "Lütfen adınızı ve soyadınızı girin.") }
                         } else null,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -206,7 +241,7 @@ fun LoginScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Giriş Yap ve Başla",
+                                text = if (lang == AppLanguage.EN) "Sign In & Begin" else "Giriş Yap ve Başla",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -220,7 +255,10 @@ fun LoginScreen(
 
                     // Anonymous quick entry option
                     TextButton(
-                        onClick = { performLogin("Bilgelik Yolcusu") },
+                        onClick = {
+                            val guestName = if (lang == AppLanguage.EN) "Wisdom Pilgrim" else "Bilgelik Yolcusu"
+                            performLogin(guestName)
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("quick_guest_login_button"),
@@ -229,7 +267,7 @@ fun LoginScreen(
                         )
                     ) {
                         Text(
-                            text = "İsim Belirtmeden Hızlı Misafir Girişi",
+                            text = if (lang == AppLanguage.EN) "Continue as Guest" else "Misafir Olarak Devam Et",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium
                         )
@@ -255,7 +293,7 @@ fun LoginScreen(
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = "100% Çevrimdışı & Yerel Veri Güvenliği",
+                        text = if (lang == AppLanguage.EN) "Sacred Scriptures Library" else "Kutsal Metinler Kitaplığı",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )

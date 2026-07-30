@@ -40,14 +40,19 @@ import com.example.ui.viewmodel.ScriptureViewModel
 
 // 1. Data Class for easy modification and clean code architecture
 data class DictionaryTerm(
-    val term: String,                    // Term in origin language or turkish
-    val origin: String,                  // Origin (Arabic, Hebrew, Greek, etc.)
+    val termTr: String,                  // Term in Turkish
+    val termEn: String,                  // Term in English
+    val originTr: String,                // Origin in Turkish
+    val originEn: String,                // Origin in English
     val category: TermCategory,          // Category (Islamic, Biblical, General)
     val meaningTr: String,               // Meaning in Turkish
     val meaningEn: String,               // Meaning in English
     val exampleTr: String = "",          // Example context / verse in Turkish
     val exampleEn: String = ""           // Example context / verse in English
-)
+) {
+    fun term(lang: AppLanguage): String = if (lang == AppLanguage.EN) termEn else termTr
+    fun origin(lang: AppLanguage): String = if (lang == AppLanguage.EN) originEn else originTr
+}
 
 enum class TermCategory {
     ALL, ISLAMIC, BIBLICAL, GENERAL
@@ -56,8 +61,10 @@ enum class TermCategory {
 object DictionaryData {
     val defaultTerms = listOf(
         DictionaryTerm(
-            term = "Tefekkür",
-            origin = "Arapça (Fkr)",
+            termTr = "Tefekkür",
+            termEn = "Contemplation (Tafakkur)",
+            originTr = "Arapça (Fkr)",
+            originEn = "Arabic (Fkr)",
             category = TermCategory.ISLAMIC,
             meaningTr = "Yaratılış, hayatın anlamı ve kutsal metinler üzerinde derinlemesine, sakin ve bilinçli bir biçimde düşünme eylemi.",
             meaningEn = "The act of deep, quiet, and conscious reflection and contemplation on creation, the meaning of life, and sacred scriptures.",
@@ -65,8 +72,10 @@ object DictionaryData {
             exampleEn = "And they contemplate the creation of the heavens and the earth. (Quran, 3:191)"
         ),
         DictionaryTerm(
-            term = "Ahid (Covenant)",
-            origin = "İbranice (Berit) / Arapça",
+            termTr = "Ahid",
+            termEn = "Covenant (Berit)",
+            originTr = "İbranice (Berit) / Arapça",
+            originEn = "Hebrew (Berit) / Arabic",
             category = TermCategory.BIBLICAL,
             meaningTr = "Tanrı ile insanlar veya peygamberler arasında karşılıklı sevgi, bağlılık ve sorumluluğa dayanan kutsal sözleşme.",
             meaningEn = "A sacred covenant or solemn agreement made between God and humanity or prophets, implying mutual commitment and responsibility.",
@@ -74,8 +83,10 @@ object DictionaryData {
             exampleEn = "I will establish my covenant between me and you and will greatly multiply your numbers. (Genesis 17:2)"
         ),
         DictionaryTerm(
-            term = "Mesih (Messiah)",
-            origin = "İbranice (Mašíaḥ) / Arapça",
+            termTr = "Mesih",
+            termEn = "Messiah (Mashiach)",
+            originTr = "İbranice (Mašíaḥ) / Arapça",
+            originEn = "Hebrew (Mašíaḥ) / Arabic",
             category = TermCategory.BIBLICAL,
             meaningTr = "Kurtarıcı ünvanı; Tanrı tarafından kutsal yağ ile meshedilerek özel bir göreve atanmış olan kimse (Hz. İsa).",
             meaningEn = "A title meaning 'the anointed one'; a savior or leader anointed by God for a special divine mission (Jesus Christ).",
@@ -83,8 +94,10 @@ object DictionaryData {
             exampleEn = "The angels said: O Mary! God gives you glad tidings of a Word from Him: His name will be Messiah Jesus."
         ),
         DictionaryTerm(
-            term = "Hanîf",
-            origin = "Arapça (Hnf)",
+            termTr = "Hanîf",
+            termEn = "Hanif (Pure Monotheist)",
+            originTr = "Arapça (Hnf)",
+            originEn = "Arabic (Hnf)",
             category = TermCategory.ISLAMIC,
             meaningTr = "Cahiliye döneminde putperestliği reddederek Hz. İbrahim'in tek tanrılı saf inancına bağlı kalan kimse.",
             meaningEn = "A monotheist in pre-Islamic Arabia who rejected polytheism and remained faithful to the pure monotheism of Abraham.",
@@ -92,8 +105,10 @@ object DictionaryData {
             exampleEn = "Abraham was neither a Jew nor a Christian, but he was one pure of faith (hanîf), a Muslim. (Quran, 3:67)"
         ),
         DictionaryTerm(
-            term = "Hikmet (Wisdom)",
-            origin = "Arapça (Hkm)",
+            termTr = "Hikmet",
+            termEn = "Wisdom (Hikmah)",
+            originTr = "Arapça (Hkm)",
+            originEn = "Arabic (Hkm)",
             category = TermCategory.GENERAL,
             meaningTr = "Eşyanın hakikatini kavrama, derin bilgi ve bilgece davranma yeteneği; dürüst, erdemli ve adil yaşama sanatı.",
             meaningEn = "The deep understanding of the reality of things, paired with sound judgment and virtuous action; the art of living justly and wisely.",
@@ -101,8 +116,10 @@ object DictionaryData {
             exampleEn = "He grants wisdom to whom He pleases, and whoever is granted wisdom has indeed been granted abundant good. (Quran, 2:269)"
         ),
         DictionaryTerm(
-            term = "Havari (Apostle)",
-            origin = "Habeşçe / Arapça",
+            termTr = "Havari",
+            termEn = "Apostle (Disciple)",
+            originTr = "Habeşçe / Arapça",
+            originEn = "Ge'ez / Arabic",
             category = TermCategory.BIBLICAL,
             meaningTr = "Hz. İsa'nın öğreti ve mesajını yaymak üzere seçtiği ve özel yetkiyle görevlendirdiği on iki yakın yardımcısından her biri.",
             meaningEn = "Each of the twelve close disciples chosen and commissioned by Jesus Christ to preach and spread His gospel and teachings.",
@@ -110,8 +127,10 @@ object DictionaryData {
             exampleEn = "The disciples said: We are helpers of God; we have believed in God. (Quran, 61:14)"
         ),
         DictionaryTerm(
-            term = "Esbâb-ı Nüzûl",
-            origin = "Arapça (Nzl)",
+            termTr = "Esbâb-ı Nüzûl",
+            termEn = "Occasions of Revelation (Asbab al-Nuzul)",
+            originTr = "Arapça (Nzl)",
+            originEn = "Arabic (Nzl)",
             category = TermCategory.ISLAMIC,
             meaningTr = "Kur'an ayetlerinin veya surelerinin hangi tarihi olaylar, sorular veya durumlar üzerine indirildiğini inceleyen bilim dalı.",
             meaningEn = "The historical occurrences, questions, or contexts that triggered the revelation of specific Quranic verses or chapters.",
@@ -119,8 +138,10 @@ object DictionaryData {
             exampleEn = "This discipline is crucial for understanding the chronological context and target message of the scriptures."
         ),
         DictionaryTerm(
-            term = "Apokrif (Apocrypha)",
-            origin = "Yunanca (Apokryphos)",
+            termTr = "Apokrif",
+            termEn = "Apocrypha",
+            originTr = "Yunanca (Apokryphos)",
+            originEn = "Greek (Apokryphos)",
             category = TermCategory.BIBLICAL,
             meaningTr = "Gizli veya şüpheli anlamına gelen, resmi kutsal kitap kanonuna dahil edilmeyen ancak dini ve tarihi öneme sahip yazılar.",
             meaningEn = "Meaning hidden or obscure; historical religious writings not accepted into the official biblical canon but containing spiritual insights.",
@@ -128,8 +149,10 @@ object DictionaryData {
             exampleEn = "Apocryphal books help scholars study the diverse theological landscapes of early Judaism and Christianity."
         ),
         DictionaryTerm(
-            term = "Tefsir (Exegesis)",
-            origin = "Arapça (Fsr)",
+            termTr = "Tefsir",
+            termEn = "Exegesis (Tafsir)",
+            originTr = "Arapça (Fsr)",
+            originEn = "Arabic (Fsr)",
             category = TermCategory.ISLAMIC,
             meaningTr = "Kutsal yazıları, özellikle Kur'an ayetlerini dilbilimsel, tarihsel ve ilahiyat açılarından açıklayan ve yorumlayan ilim.",
             meaningEn = "The critical interpretation and comprehensive explanation of sacred texts, especially the Quran, using historical and linguistic analysis.",
@@ -137,8 +160,10 @@ object DictionaryData {
             exampleEn = "Classical commentaries elucidate the literary, historical, and philosophical dimensions of the verses."
         ),
         DictionaryTerm(
-            term = "Vahy (Revelation)",
-            origin = "Arapça (Why)",
+            termTr = "Vahy",
+            termEn = "Divine Revelation (Wahyi)",
+            originTr = "Arapça (Why)",
+            originEn = "Arabic (Why)",
             category = TermCategory.GENERAL,
             meaningTr = "Tanrısal bilgi, buyruk veya hikmetlerin peygamberlerin kalbine doğrudan ya da bir elçi melek vasıtasıyla ulaştırılması.",
             meaningEn = "The supernatural communication of divine knowledge, commandments, or wisdom directly or via an angelic messenger to the prophets.",
@@ -146,8 +171,10 @@ object DictionaryData {
             exampleEn = "Indeed, We have revealed to you as We revealed to Noah and the prophets after him. (Quran, 4:163)"
         ),
         DictionaryTerm(
-            term = "Zebur (Psalms)",
-            origin = "İbranice (Mizmor) / Arapça",
+            termTr = "Zebur",
+            termEn = "Psalms (Zabur)",
+            originTr = "İbranice (Mizmor) / Arapça",
+            originEn = "Hebrew (Mizmor) / Arabic",
             category = TermCategory.BIBLICAL,
             meaningTr = "Davud peygambere indirilen, Tanrı'yı öven şiirsel dualar, ilahiler ve bilgelik sözlerini içeren kutsal kitap.",
             meaningEn = "The collection of sacred songs, poems, and prayers revealed to King David, praising God's majesty and seeking righteousness.",
@@ -155,8 +182,10 @@ object DictionaryData {
             exampleEn = "And to David We gave the Psalms. (Quran, 17:55)"
         ),
         DictionaryTerm(
-            term = "Hanefî / Şafiî / Caferî",
-            origin = "Arapça",
+            termTr = "Hanefî / Şafiî / Caferî",
+            termEn = "Hanafi / Shafi'i / Ja'fari",
+            originTr = "Arapça",
+            originEn = "Arabic",
             category = TermCategory.ISLAMIC,
             meaningTr = "İslam hukukunun (fıkıh) kurumsallaşmış farklı yorum, anlama ve ameli uygulama ekollerinden (mezhep) bazıları.",
             meaningEn = "Some of the mainstream traditional schools of Islamic jurisprudence and legal methodology (madhhab).",
@@ -164,8 +193,10 @@ object DictionaryData {
             exampleEn = "Legal schools showcase the analytical wealth and pragmatic adaptability in interpreting core scriptures."
         ),
         DictionaryTerm(
-            term = "Adalet (Righteousness)",
-            origin = "Arapça / İbranice (Tzedek)",
+            termTr = "Adalet",
+            termEn = "Justice & Righteousness",
+            originTr = "Arapça / İbranice (Tzedek)",
+            originEn = "Arabic / Hebrew (Tzedek)",
             category = TermCategory.GENERAL,
             meaningTr = "Her şeyi yerli yerine koyma, hak sahibine hakkını verme ve her koşulda doğruluktan sapmama ilkesi.",
             meaningEn = "The standard of moral perfection, giving everyone their due, and acting in alignment with divine truth and fairness.",
@@ -173,8 +204,10 @@ object DictionaryData {
             exampleEn = "God commands justice and fair dealing, and kindness to close relatives. (Quran, 16:90)"
         ),
         DictionaryTerm(
-            term = "Sükûnet (Shalom/Salam)",
-            origin = "Arapça (Skn) / İbranice",
+            termTr = "Sükûnet",
+            termEn = "Tranquility (Sakinah / Shalom)",
+            originTr = "Arapça (Skn) / İbranice",
+            originEn = "Arabic (Skn) / Hebrew",
             category = TermCategory.GENERAL,
             meaningTr = "Kutsal metinlerin vaat ettiği içsel barış, dinginlik ve kalbin ilahi huzurla mutmain olması durumu.",
             meaningEn = "The inner state of deep peace, calmness, and spiritual tranquility resulting from alignment with divine guidance.",
@@ -182,8 +215,10 @@ object DictionaryData {
             exampleEn = "It is He who sent down tranquility into the hearts of the believers. (Quran, 48:4)"
         ),
         DictionaryTerm(
-            term = "Aydınlanma (Enlightenment)",
-            origin = "Türkçe / İngilizce",
+            termTr = "Aydınlanma",
+            termEn = "Spiritual Enlightenment",
+            originTr = "Türkçe / İngilizce",
+            originEn = "Turkish / English",
             category = TermCategory.GENERAL,
             meaningTr = "Zihnin ve kalbin batıl inançlardan, cehaletten ve karanlıktan kurtularak ilahi hakikat ve bilgiyle nurlanması.",
             meaningEn = "The process of the mind and heart becoming illuminated with divine truth and knowledge, breaking free from ignorance and darkness.",
@@ -191,8 +226,10 @@ object DictionaryData {
             exampleEn = "Indeed, this Quran guides to that which is most suitable. (Quran, 17:9)"
         ),
         DictionaryTerm(
-            term = "Barış (Peace)",
-            origin = "Türkçe / Arapça (Selâm)",
+            termTr = "Barış",
+            termEn = "Peace (Salam)",
+            originTr = "Türkçe / Arapça (Selâm)",
+            originEn = "Turkish / Arabic (Salam)",
             category = TermCategory.GENERAL,
             meaningTr = "Savaşın, çatışmanın ve huzursuzluğun olmaması hali; hem toplumsal düzeyde uyum hem de bireysel düzeyde içsel huzur.",
             meaningEn = "The absence of war, conflict, and unrest; representing both societal harmony and individual inner tranquility.",
@@ -200,8 +237,10 @@ object DictionaryData {
             exampleEn = "O you who have believed, enter into peace completely. (Quran, 2:208)"
         ),
         DictionaryTerm(
-            term = "Merhamet (Mercy/Compassion)",
-            origin = "Arapça (Rhm) / İbranice (Rahamim)",
+            termTr = "Merhamet",
+            termEn = "Mercy & Compassion",
+            originTr = "Arapça (Rhm) / İbranice (Rahamim)",
+            originEn = "Arabic (Rhm) / Hebrew (Rahamim)",
             category = TermCategory.GENERAL,
             meaningTr = "Bir kimsenin veya başka bir canlının acısına, kederine karşı duyarlı olma ve ona iyilikle, şefkatle yaklaşma duygusu.",
             meaningEn = "Compassion or forgiveness shown toward someone whom it is within one's power to punish or harm; benevolent treatment of others.",
@@ -209,8 +248,10 @@ object DictionaryData {
             exampleEn = "And He is the most merciful of the merciful. (Quran, 12:92)"
         ),
         DictionaryTerm(
-            term = "Hakikat (Truth)",
-            origin = "Arapça (Hkk) / Grekçe (Aletheia)",
+            termTr = "Hakikat",
+            termEn = "Ultimate Truth (Haqq)",
+            originTr = "Arapça (Hkk) / Grekçe (Aletheia)",
+            originEn = "Arabic (Hkk) / Greek (Aletheia)",
             category = TermCategory.GENERAL,
             meaningTr = "Gerçeklik, asıl, değişmeyen doğru; kutsal metinlerin ulaştırmak istediği nihai gerçeklik ve varoluşsal bilgelik.",
             meaningEn = "The quality or state of being true, actual, or honest; the ultimate reality and existential wisdom conveyed by sacred texts.",
@@ -252,13 +293,15 @@ fun DictionaryScreen(
     }
 
     // Filtered dictionary list based on search and category
-    val filteredTerms = remember(searchQuery, selectedCategory, initialTerms.size) {
+    val filteredTerms = remember(searchQuery, selectedCategory, initialTerms.size, lang) {
         initialTerms.filter { term ->
             val matchCategory = selectedCategory == TermCategory.ALL || term.category == selectedCategory
             val query = searchQuery.lowercase().trim()
             val matchQuery = query.isEmpty() || 
-                    term.term.lowercase().contains(query) ||
-                    term.origin.lowercase().contains(query) ||
+                    term.termTr.lowercase().contains(query) ||
+                    term.termEn.lowercase().contains(query) ||
+                    term.originTr.lowercase().contains(query) ||
+                    term.originEn.lowercase().contains(query) ||
                     term.meaningTr.lowercase().contains(query) ||
                     term.meaningEn.lowercase().contains(query)
             matchCategory && matchQuery
@@ -451,8 +494,8 @@ fun DictionaryScreen(
                     contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    items(filteredTerms, key = { it.term }) { item ->
-                        val isExpanded = expandedTermId == item.term
+                    items(filteredTerms, key = { it.termTr }) { item ->
+                        val isExpanded = expandedTermId == item.termTr
                         val displayFont = if (readerSettings.fontFamily == FontFamilySetting.SERIF) FontFamily.Serif else FontFamily.SansSerif
 
                         Card(
@@ -478,7 +521,7 @@ fun DictionaryScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        expandedTermId = if (isExpanded) null else item.term
+                                        expandedTermId = if (isExpanded) null else item.termTr
                                     }
                                     .padding(16.dp)
                             ) {
@@ -490,14 +533,14 @@ fun DictionaryScreen(
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = item.term,
+                                            text = item.term(lang),
                                             fontFamily = FontFamily.Serif,
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 18.sp,
                                             color = MaterialTheme.colorScheme.primary
                                         )
                                         Text(
-                                            text = item.origin,
+                                            text = item.origin(lang),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = SacredGold,
                                             fontWeight = FontWeight.Medium
@@ -734,8 +777,10 @@ fun DictionaryScreen(
                             initialTerms.add(
                                 0, // Insert at top
                                 DictionaryTerm(
-                                    term = newTermName.trim(),
-                                    origin = newTermOrigin.ifBlank { if (lang == AppLanguage.EN) "Unknown" else "Bilinmiyor" }.trim(),
+                                    termTr = newTermName.trim(),
+                                    termEn = newTermName.trim(),
+                                    originTr = newTermOrigin.ifBlank { if (lang == AppLanguage.EN) "Unknown" else "Bilinmiyor" }.trim(),
+                                    originEn = newTermOrigin.ifBlank { if (lang == AppLanguage.EN) "Unknown" else "Bilinmiyor" }.trim(),
                                     category = newTermCategory,
                                     meaningTr = newTermMeaningTr.ifBlank { newTermMeaningEn }.trim(),
                                     meaningEn = newTermMeaningEn.ifBlank { newTermMeaningTr }.trim(),

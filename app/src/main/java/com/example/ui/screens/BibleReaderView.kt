@@ -51,6 +51,7 @@ fun BibleReaderView(
         "sermon" -> viewModel.currentSelectedSermonBook
         "talmud" -> viewModel.currentSelectedTalmudBook
         "bukhari" -> viewModel.currentSelectedBukhariBook
+        "gita" -> viewModel.currentSelectedGitaBook
         else -> viewModel.currentSelectedTorahBook
     }.collectAsState()
 
@@ -59,6 +60,7 @@ fun BibleReaderView(
         "sermon" -> viewModel.currentSelectedSermonChapter
         "talmud" -> viewModel.currentSelectedTalmudChapter
         "bukhari" -> viewModel.currentSelectedBukhariChapter
+        "gita" -> viewModel.currentSelectedGitaChapter
         else -> viewModel.currentSelectedTorahChapter
     }.collectAsState()
     
@@ -157,6 +159,7 @@ fun BibleReaderView(
         "sermon" -> BibleRepository.bibleBooks
         "talmud" -> BibleRepository.talmudBooks
         "bukhari" -> BibleRepository.bukhariBooks
+        "gita" -> BibleRepository.gitaBooks
         else -> BibleRepository.bibleBooks
     }
     val filteredBooks = remember(searchQuery) {
@@ -308,6 +311,7 @@ fun BibleReaderView(
                                 "sermon" -> viewModel.selectSermonChapter(null)
                                 "talmud" -> viewModel.selectTalmudChapter(null)
                                 "bukhari" -> viewModel.selectBukhariChapter(null)
+                                "gita" -> viewModel.selectGitaChapter(null)
                             }
                         } else if (currentSelectedBook != null) {
                             when (book.id) {
@@ -315,6 +319,7 @@ fun BibleReaderView(
                                 "sermon" -> viewModel.selectSermonBook(null)
                                 "talmud" -> viewModel.selectTalmudBook(null)
                                 "bukhari" -> viewModel.selectBukhariBook(null)
+                                "gita" -> viewModel.selectGitaBook(null)
                             }
                         } else {
                             onNavigateBack()
@@ -377,6 +382,7 @@ fun BibleReaderView(
                             "sermon" -> if (lang == AppLanguage.EN) "Gospel Library" else "İncil Kütüphanesi"
                             "talmud" -> if (lang == AppLanguage.EN) "Talmud Library" else "Talmud Kütüphanesi"
                             "bukhari" -> if (lang == AppLanguage.EN) "Sahih al-Bukhari Library" else "Sahih-i Buharî Kütüphanesi"
+                            "gita" -> if (lang == AppLanguage.EN) "Bhagavad Gita Library" else "Bhagavad Gita Kütüphanesi"
                             else -> if (lang == AppLanguage.EN) "Gospel Library" else "İncil Kütüphanesi"
                         },
                         style = MaterialTheme.typography.headlineSmall,
@@ -386,10 +392,11 @@ fun BibleReaderView(
                     )
                     Text(
                         text = when (book.id) {
-                            "torah" -> if (lang == AppLanguage.EN) "Contemplate Hebrew scriptures and academic translations." else "İbranice kutsal metinleri ve akademik çevirileri tefekkür edin."
+                            "torah" -> if (lang == AppLanguage.EN) "Contemplate Hebrew scriptures and modern translations." else "İbranice kutsal metinleri ve Türkçe çevirileri tefekkür edin."
                             "sermon" -> if (lang == AppLanguage.EN) "Read the teachings of Jesus Christ in their Greek originals and modern translations." else "Grekçe asılları ve Türkçe çevirileri ile İsa Mesih'in öğretilerini okuyun."
-                            "talmud" -> if (lang == AppLanguage.EN) "Explore the Babylonian Talmud with modern commentary and parallel Aramaic text." else "Tefsirler ve paralel Aramice metinler eşliğinde Babil Talmudu'nu okuyun."
+                            "talmud" -> if (lang == AppLanguage.EN) "Explore the Babylonian Talmud with commentary and parallel Aramaic text." else "Tefsirler ve paralel Aramice metinler eşliğinde Babil Talmudu'nu okuyun."
                             "bukhari" -> if (lang == AppLanguage.EN) "Read Sahih al-Bukhari with English and Turkish translations." else "Sahih-i Buharî'yi Türkçe çevirileri ve Arapça asılları ile inceleyin."
+                            "gita" -> if (lang == AppLanguage.EN) "Explore Bhagavad Gita with Sanskrit original verses and translations." else "Bhagavad Gita'yı Sanskritçe asılları ve çevirileri ile inceleyin."
                             else -> ""
                         },
                         style = MaterialTheme.typography.bodyMedium,
@@ -429,6 +436,7 @@ fun BibleReaderView(
                                         "sermon" -> viewModel.selectSermonBook(bibleBook)
                                         "talmud" -> viewModel.selectTalmudBook(bibleBook)
                                         "bukhari" -> viewModel.selectBukhariBook(bibleBook)
+                                        "gita" -> viewModel.selectGitaBook(bibleBook)
                                     }
                                 },
                                 modifier = Modifier
@@ -516,9 +524,9 @@ fun BibleReaderView(
                     )
                     Text(
                         text = if (lang == AppLanguage.EN) {
-                            "Select the chapter you want to read to load live API integration and academic study text."
+                            "Select the chapter you want to read to view text and commentary."
                         } else {
-                            "Okumak istediğiniz bölümü seçerek canlı API entegrasyonu ve akademik tefekkür metnini yükleyin."
+                            "Okumak istediğiniz bölümü seçerek metni ve dipnotları görüntüleyin."
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -553,6 +561,7 @@ fun BibleReaderView(
                                                     "sermon" -> viewModel.selectSermonChapter(ch)
                                                     "talmud" -> viewModel.selectTalmudChapter(ch)
                                                     "bukhari" -> viewModel.selectBukhariChapter(ch)
+                                                    "gita" -> viewModel.selectGitaChapter(ch)
                                                 }
                                             }
                                             .testTag("chapter_button_$ch"),
@@ -629,6 +638,7 @@ fun BibleReaderView(
                                             "sermon" -> viewModel.selectSermonChapter(currentChapter)
                                             "talmud" -> viewModel.selectTalmudChapter(currentChapter)
                                             "bukhari" -> viewModel.selectBukhariChapter(currentChapter)
+                                            "gita" -> viewModel.selectGitaChapter(currentChapter)
                                         }
                                     }
                                 },
@@ -771,9 +781,9 @@ fun BibleReaderView(
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
                                                 text = if (isChapterDownloaded) {
-                                                    if (lang == AppLanguage.EN) "Available Offline" else "Çevrimdışı Kullanılabilir"
+                                                    if (lang == AppLanguage.EN) "Saved to Device" else "Cihazda Kayıtlı"
                                                 } else {
-                                                    if (lang == AppLanguage.EN) "Offline Reader" else "Çevrimdışı Okuma"
+                                                    if (lang == AppLanguage.EN) "Download Chapter" else "Bölümü İndir"
                                                 },
                                                 style = MaterialTheme.typography.titleSmall,
                                                 fontWeight = FontWeight.Bold,
@@ -781,9 +791,9 @@ fun BibleReaderView(
                                             )
                                             Text(
                                                 text = if (isChapterDownloaded) {
-                                                    if (lang == AppLanguage.EN) "Read without an internet connection." else "İnternet bağlantısı olmadan okuyun."
+                                                    if (lang == AppLanguage.EN) "Saved to read anytime." else "Dilediğiniz an okumak için cihazınızda kayıtlı."
                                                 } else {
-                                                    if (lang == AppLanguage.EN) "Download this chapter for offline study." else "Çevrimdışı ders çalışmak için bu bölümü indirin."
+                                                    if (lang == AppLanguage.EN) "Download this chapter to read anytime." else "Bu bölümü dilediğiniz zaman okumak için indirin."
                                                 },
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1054,6 +1064,7 @@ fun BibleReaderView(
                                     "sermon" -> "Gospel"
                                     "talmud" -> "Talmud"
                                     "bukhari" -> "Sahih al-Bukhari"
+                                    "gita" -> "Bhagavad Gita"
                                     else -> "Scripture"
                                 }
                             } else {
@@ -1062,6 +1073,7 @@ fun BibleReaderView(
                                     "sermon" -> "İncil"
                                     "talmud" -> "Talmud"
                                     "bukhari" -> "Sahih-i Buharî"
+                                    "gita" -> "Bhagavad Gita"
                                     else -> "Kutsal Metin"
                                 }
                             }
