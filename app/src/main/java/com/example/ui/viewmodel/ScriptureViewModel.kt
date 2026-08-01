@@ -85,6 +85,15 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
         .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .addInterceptor { chain ->
+            val original = chain.request()
+            val request = original.newBuilder()
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+                .header("Accept", "*/*")
+                .method(original.method, original.body)
+                .build()
+            chain.proceed(request)
+        }
         .build()
     private var mediaPlayer: MediaPlayer? = null
 
@@ -117,6 +126,68 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _downloadProgress = MutableStateFlow<Map<String, Float>>(emptyMap())
     val downloadProgress = _downloadProgress.asStateFlow()
+
+    @Volatile
+    private var _bukhariEngHadithsMap: Map<Int, List<JSONObject>>? = null
+    @Volatile
+    private var _bukhariAraHadithsMap: Map<Int, List<JSONObject>>? = null
+
+    private fun getBukhariHadithsForBook(bookNumber: Int, isArabic: Boolean): List<JSONObject> {
+        val cacheFile = java.io.File(getApplication<Application>().filesDir, if (isArabic) "ara-bukhari.min.json" else "eng-bukhari.min.json")
+        if (!cacheFile.exists()) return emptyList()
+
+        if (isArabic) {
+            if (_bukhariAraHadithsMap == null) {
+                synchronized(this) {
+                    if (_bukhariAraHadithsMap == null) {
+                        try {
+                            val jsonStr = cacheFile.readText()
+                            val json = JSONObject(jsonStr)
+                            val array = json.getJSONArray("hadiths")
+                            val map = mutableMapOf<Int, MutableList<JSONObject>>()
+                            for (i in 0 until array.length()) {
+                                val hObj = array.getJSONObject(i)
+                                val ref = hObj.optJSONObject("reference")
+                                val bNum = ref?.optInt("book") ?: -1
+                                if (bNum != -1) {
+                                    map.getOrPut(bNum) { mutableListOf() }.add(hObj)
+                                }
+                            }
+                            _bukhariAraHadithsMap = map
+                        } catch (e: Exception) {
+                            android.util.Log.e("ScriptureViewModel", "Failed to parse ara-bukhari", e)
+                        }
+                    }
+                }
+            }
+            return _bukhariAraHadithsMap?.get(bookNumber) ?: emptyList()
+        } else {
+            if (_bukhariEngHadithsMap == null) {
+                synchronized(this) {
+                    if (_bukhariEngHadithsMap == null) {
+                        try {
+                            val jsonStr = cacheFile.readText()
+                            val json = JSONObject(jsonStr)
+                            val array = json.getJSONArray("hadiths")
+                            val map = mutableMapOf<Int, MutableList<JSONObject>>()
+                            for (i in 0 until array.length()) {
+                                val hObj = array.getJSONObject(i)
+                                val ref = hObj.optJSONObject("reference")
+                                val bNum = ref?.optInt("book") ?: -1
+                                if (bNum != -1) {
+                                    map.getOrPut(bNum) { mutableListOf() }.add(hObj)
+                                }
+                            }
+                            _bukhariEngHadithsMap = map
+                        } catch (e: Exception) {
+                            android.util.Log.e("ScriptureViewModel", "Failed to parse eng-bukhari", e)
+                        }
+                    }
+                }
+            }
+            return _bukhariEngHadithsMap?.get(bookNumber) ?: emptyList()
+        }
+    }
 
     fun selectSurah(surah: QuranSurah) {
         _currentSelectedSurah.value = surah
@@ -455,6 +526,31 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
 
                     kotlinx.coroutines.delay(50)
                 }
+            } else if (bookId == "bukhari") {
+                val cacheFileEng = java.io.File(getApplication<Application>().filesDir, "eng-bukhari.min.json")
+                val cacheFileAra = java.io.File(getApplication<Application>().filesDir, "ara-bukhari.min.json")
+                withContext(Dispatchers.IO) {
+                    if (!cacheFileEng.exists()) {
+                        val bukhariUrl = "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/eng-bukhari.min.json"
+                        downloadFileToLocal(bukhariUrl, cacheFileEng)
+                    }
+                    val mapProgress = _downloadProgress.value.toMutableMap()
+                    mapProgress[bookId] = 0.5f
+                    _downloadProgress.value = mapProgress
+
+                    if (!cacheFileAra.exists()) {
+                        val bukhariAraUrl = "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari.min.json"
+                        downloadFileToLocal(bukhariAraUrl, cacheFileAra)
+                    }
+                }
+            } else if (bookId == "gita") {
+                val cacheFileGita = java.io.File(getApplication<Application>().filesDir, "gita-verses.min.json")
+                withContext(Dispatchers.IO) {
+                    if (!cacheFileGita.exists()) {
+                        val gitaUrl = "https://raw.githubusercontent.com/gita/gita/main/data/verse.json"
+                        downloadFileToLocal(gitaUrl, cacheFileGita)
+                    }
+                }
             } else {
                 // Standard book like Tevrat or İncil
                 val book = books.firstOrNull { it.id == bookId }
@@ -473,7 +569,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                     }
                 } else {
                     for (p in 1..10) {
-                        kotlinx.coroutines.delay(100)
+                        kotlinx.coroutines.delay(50)
                         val currentMap = _downloadProgress.value.toMutableMap()
                         currentMap[bookId] = p / 10f
                         _downloadProgress.value = currentMap
@@ -490,6 +586,8 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             val finalMap = _downloadProgress.value.toMutableMap()
             finalMap.remove(bookId)
             _downloadProgress.value = finalMap
+
+            exportPersistentBackup()
         }
     }
 
@@ -1139,179 +1237,10 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             withContext(Dispatchers.IO) {
                 try {
                     val paragraphsList = mutableListOf<String>()
-                    val originalParagraphsList = mutableListOf<String>()
-                    val englishVerses = mutableListOf<String>()
-                    
-                    if (bookId == "torah") {
-                        // Sefaria API
-                        val encodedBookName = bibleBook.nameEnglish.replace(" ", "%20")
-                        val sefariaUrl = "https://www.sefaria.org/api/texts/$encodedBookName.$chapterNumber?context=0"
-                        val request = Request.Builder().url(sefariaUrl).build()
-                        okHttpClient.newCall(request).execute().use { response ->
-                            if (!response.isSuccessful) throw IOException("Sefaria error: ${response.code}")
-                            val bodyStr = response.body?.string() ?: ""
-                            val json = JSONObject(bodyStr)
-                            
-                            val engJA = json.optJSONArray("text")
-                            if (engJA != null) {
-                                for (i in 0 until engJA.length()) {
-                                    val cleanText = engJA.optString(i).replace(Regex("<[^>]*>"), "")
-                                    englishVerses.add("${i + 1}: $cleanText")
-                                }
-                            }
-                            
-                            val hebJA = json.optJSONArray("he")
-                            if (hebJA != null) {
-                                for (i in 0 until hebJA.length()) {
-                                    val cleanHeb = hebJA.optString(i).replace(Regex("<[^>]*>"), "")
-                                    originalParagraphsList.add("${i + 1}: $cleanHeb")
-                                }
-                            }
-                        }
-                    } else if (bookId == "talmud") {
-                        // Talmud Sefaria API
-                        val pageNum = 2 + (chapterNumber - 1) / 2
-                        val side = if (chapterNumber % 2 == 1) "a" else "b"
-                        val daf = "$pageNum$side"
-                        
-                        val sefariaUrl = "https://www.sefaria.org/api/texts/${bibleBook.id}.$daf?context=0"
-                        val request = Request.Builder().url(sefariaUrl).build()
-                        okHttpClient.newCall(request).execute().use { response ->
-                            if (!response.isSuccessful) throw IOException("Sefaria error: ${response.code}")
-                            val bodyStr = response.body?.string() ?: ""
-                            val json = JSONObject(bodyStr)
-                            
-                            val engJA = json.optJSONArray("text")
-                            if (engJA != null) {
-                                for (i in 0 until engJA.length()) {
-                                    val cleanText = engJA.optString(i).replace(Regex("<[^>]*>"), "")
-                                    englishVerses.add("${i + 1}: $cleanText")
-                                }
-                            }
-                            
-                            val hebJA = json.optJSONArray("he")
-                            if (hebJA != null) {
-                                for (i in 0 until hebJA.length()) {
-                                    val cleanHeb = hebJA.optString(i).replace(Regex("<[^>]*>"), "")
-                                    originalParagraphsList.add("${i + 1}: $cleanHeb")
-                                }
-                            }
-                        }
-                    } else if (bookId == "bukhari") {
-                        // Sahih al-Bukhari API
-                        val cacheFileEng = java.io.File(getApplication<Application>().filesDir, "eng-bukhari.min.json")
-                        val cacheFileAra = java.io.File(getApplication<Application>().filesDir, "ara-bukhari.min.json")
-                        
-                        if (!cacheFileEng.exists()) {
-                            val bukhariUrl = "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/eng-bukhari.min.json"
-                            downloadFileToLocal(bukhariUrl, cacheFileEng)
-                        }
-                        if (!cacheFileAra.exists()) {
-                            val bukhariAraUrl = "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari.min.json"
-                            downloadFileToLocal(bukhariAraUrl, cacheFileAra)
-                        }
-                        
-                        if (cacheFileEng.exists()) {
-                            val engJsonStr = cacheFileEng.readText()
-                            val engJson = JSONObject(engJsonStr)
-                            val engHadithsJA = engJson.getJSONArray("hadiths")
-                            
-                            val bookNumber = bibleBook.bookNumber
-                            val matchedEngHadiths = mutableListOf<JSONObject>()
-                            for (i in 0 until engHadithsJA.length()) {
-                                val hObj = engHadithsJA.getJSONObject(i)
-                                val refObj = hObj.optJSONObject("reference")
-                                if (refObj != null && refObj.optInt("book") == bookNumber) {
-                                    matchedEngHadiths.add(hObj)
-                                }
-                            }
-                            
-                            var matchedAraHadiths = mutableListOf<JSONObject>()
-                            if (cacheFileAra.exists()) {
-                                val araJsonStr = cacheFileAra.readText()
-                                val araJson = JSONObject(araJsonStr)
-                                val araHadithsJA = araJson.getJSONArray("hadiths")
-                                for (i in 0 until araHadithsJA.length()) {
-                                    val hObj = araHadithsJA.getJSONObject(i)
-                                    val refObj = hObj.optJSONObject("reference")
-                                    if (refObj != null && refObj.optInt("book") == bookNumber) {
-                                        matchedAraHadiths.add(hObj)
-                                    }
-                                }
-                            }
-                            
-                            if (matchedEngHadiths.isNotEmpty()) {
-                                for (idx in 0 until matchedEngHadiths.size) {
-                                    val targetEng = matchedEngHadiths[idx]
-                                    val hNum = targetEng.optInt("hadithnumber", idx + 1)
-                                    val textEng = targetEng.getString("text")
-                                    englishVerses.add("Hadis $hNum: $textEng")
-                                    
-                                    val targetAra = matchedAraHadiths.getOrNull(idx)
-                                    if (targetAra != null) {
-                                        val textAra = targetAra.getString("text")
-                                        originalParagraphsList.add("Hadis $hNum: $textAra")
-                                    } else {
-                                        originalParagraphsList.add("Hadis $hNum: $textEng")
-                                    }
-                                }
-                            } else {
-                                throw IOException("No hadiths found for book $bookNumber")
-                            }
-                        } else {
-                            throw IOException("Failed to download Bukhari English file")
-                        }
-                    } else {
-                        // Bible-API with normalization and fallback
-                        val normalizedName = normalizeBibleApiBookName(bibleBook.nameEnglish)
-                        val encodedBookName = java.net.URLEncoder.encode(normalizedName, "UTF-8")
-                        val bibleUrl = "https://bible-api.com/$encodedBookName+$chapterNumber"
-                        val request = Request.Builder().url(bibleUrl).build()
-                        var fetchSuccess = false
-                        try {
-                            okHttpClient.newCall(request).execute().use { response ->
-                                if (response.isSuccessful) {
-                                    val bodyStr = response.body?.string() ?: ""
-                                    val json = JSONObject(bodyStr)
-                                    val versesJA = json.optJSONArray("verses")
-                                    if (versesJA != null && versesJA.length() > 0) {
-                                        for (i in 0 until versesJA.length()) {
-                                            val vObj = versesJA.getJSONObject(i)
-                                            val vNum = vObj.getInt("verse")
-                                            val vText = vObj.getString("text").trim()
-                                            englishVerses.add("$vNum: $vText")
-                                            originalParagraphsList.add("$vNum: $vText")
-                                        }
-                                        fetchSuccess = true
-                                    }
-                                }
-                            }
-                        } catch (e: Exception) {
-                            android.util.Log.w("ScriptureViewModel", "Primary Bible API call failed for $normalizedName $chapterNumber", e)
-                        }
+                    val (englishVerses, originalParagraphsList) = fetchChapterContentInternal(bookId, bibleBook, chapterNumber)
 
-                        if (!fetchSuccess) {
-                            val fallbackUrl = "https://bible-api.com/$encodedBookName+$chapterNumber?translation=kjv"
-                            val fallbackReq = Request.Builder().url(fallbackUrl).build()
-                            okHttpClient.newCall(fallbackReq).execute().use { response ->
-                                if (response.isSuccessful) {
-                                    val bodyStr = response.body?.string() ?: ""
-                                    val json = JSONObject(bodyStr)
-                                    val versesJA = json.optJSONArray("verses")
-                                    if (versesJA != null) {
-                                        for (i in 0 until versesJA.length()) {
-                                            val vObj = versesJA.getJSONObject(i)
-                                            val vNum = vObj.getInt("verse")
-                                            val vText = vObj.getString("text").trim()
-                                            englishVerses.add("$vNum: $vText")
-                                            originalParagraphsList.add("$vNum: $vText")
-                                        }
-                                    }
-                                } else {
-                                    throw IOException("Kutsal metin yüklenemedi: HTTP ${response.code}")
-                                }
-                            }
-                        }
+                    if (englishVerses.isEmpty()) {
+                        throw IOException(if (_readerSettings.value.language == AppLanguage.EN) "Could not load chapter text. Please check internet connection." else "Kutsal metin yüklenemedi. Lütfen internet bağlantınızı kontrol edin.")
                     }
                     
                     // Fast batch translation with free Google Translate (GTX)
@@ -1566,50 +1495,9 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             val englishVerses = mutableListOf<String>()
 
             try {
-                if (category == "torah") {
-                    val encodedBookName = targetBook.nameEnglish.replace(" ", "%20")
-                    val url = "https://www.sefaria.org/api/texts/$encodedBookName.$chapterNumber?context=0"
-                    val req = Request.Builder().url(url).build()
-                    okHttpClient.newCall(req).execute().use { response ->
-                        if (response.isSuccessful) {
-                            val json = JSONObject(response.body?.string() ?: "")
-                            val engJA = json.optJSONArray("text")
-                            if (engJA != null) {
-                                for (i in 0 until engJA.length()) {
-                                    val cleanText = engJA.optString(i).replace(Regex("<[^>]*>"), "")
-                                    englishVerses.add("${i + 1}: $cleanText")
-                                }
-                            }
-                            val hebJA = json.optJSONArray("he")
-                            if (hebJA != null) {
-                                for (i in 0 until hebJA.length()) {
-                                    val cleanHeb = hebJA.optString(i).replace(Regex("<[^>]*>"), "")
-                                    originalParagraphsList.add("${i + 1}: $cleanHeb")
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    val normalizedName = normalizeBibleApiBookName(targetBook.nameEnglish)
-                    val encodedBookName = java.net.URLEncoder.encode(normalizedName, "UTF-8")
-                    val url = "https://bible-api.com/$encodedBookName+$chapterNumber"
-                    val req = Request.Builder().url(url).build()
-                    okHttpClient.newCall(req).execute().use { response ->
-                        if (response.isSuccessful) {
-                            val json = JSONObject(response.body?.string() ?: "")
-                            val versesJA = json.optJSONArray("verses")
-                            if (versesJA != null) {
-                                for (i in 0 until versesJA.length()) {
-                                    val vObj = versesJA.getJSONObject(i)
-                                    val vNum = vObj.getInt("verse")
-                                    val vText = vObj.getString("text").trim()
-                                    englishVerses.add("$vNum: $vText")
-                                    originalParagraphsList.add("$vNum: $vText")
-                                }
-                            }
-                        }
-                    }
-                }
+                val (fetchedEng, fetchedOrig) = fetchChapterContentInternal(category, targetBook, chapterNumber)
+                englishVerses.addAll(fetchedEng)
+                originalParagraphsList.addAll(fetchedOrig)
 
                 if (englishVerses.isNotEmpty()) {
                     if (_readerSettings.value.language == AppLanguage.EN) {
@@ -2653,7 +2541,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                         }
                         val selectedTorah = torahBooks.random()
                         val chapter = (1..selectedTorah.third).random()
-                        val url = "https://bible-api.com/${selectedTorah.first}+$chapter"
+                        val url = "https://bible-api.com/${selectedTorah.first}%20$chapter"
                         val request = Request.Builder().url(url).build()
                         okHttpClient.newCall(request).execute().use { response ->
                             if (!response.isSuccessful) throw Exception("Torah Bible API failure")
@@ -2665,10 +2553,13 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                             val verseObj = versesJA.getJSONObject(randomIdx)
                             val englishText = verseObj.getString("text").trim()
                             val verseNum = verseObj.getInt("verse")
-                            val finalText = if (currentLang == AppLanguage.EN) {
+                            var finalText = if (currentLang == AppLanguage.EN) {
                                 englishText
                             } else {
                                 translateTextGtx(englishText, targetLang = "tr", sourceLang = "en")
+                            }
+                            if (currentLang == AppLanguage.TR && (finalText == englishText || finalText.isBlank())) {
+                                return@withContext fetchOfflineVerseForActive(fallbackBook, currentLang)
                             }
                             val ref = if (currentLang == AppLanguage.EN) {
                                 "${selectedTorah.second}, Chapter $chapter:$verseNum"
@@ -2680,7 +2571,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                     }
                     "sermon" -> {
                         val chapter = (5..7).random()
-                        val url = "https://bible-api.com/matthew+$chapter"
+                        val url = "https://bible-api.com/matthew%20$chapter"
                         val request = Request.Builder().url(url).build()
                         okHttpClient.newCall(request).execute().use { response ->
                             if (!response.isSuccessful) throw Exception("Sermon Bible API failure")
@@ -2692,10 +2583,13 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                             val verseObj = versesJA.getJSONObject(randomIdx)
                             val englishText = verseObj.getString("text").trim()
                             val verseNum = verseObj.getInt("verse")
-                            val finalText = if (currentLang == AppLanguage.EN) {
+                            var finalText = if (currentLang == AppLanguage.EN) {
                                 englishText
                             } else {
                                 translateTextGtx(englishText, targetLang = "tr", sourceLang = "en")
+                            }
+                            if (currentLang == AppLanguage.TR && (finalText == englishText || finalText.isBlank())) {
+                                return@withContext fetchOfflineVerseForActive(fallbackBook, currentLang)
                             }
                             val ref = if (currentLang == AppLanguage.EN) {
                                 "The Gospel, Matthew $chapter:$verseNum"
@@ -3220,14 +3114,17 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
     private suspend fun translateVersesBatch(verses: List<String>): List<String> = withContext(Dispatchers.IO) {
         if (verses.isEmpty()) return@withContext emptyList()
         val translatedList = mutableListOf<String>()
-        val chunkSize = 12
+        val chunkSize = 5
         for (i in verses.indices step chunkSize) {
             val chunk = verses.subList(i, minOf(i + chunkSize, verses.size))
             val combinedText = chunk.joinToString("\n")
             try {
                 val encodedText = java.net.URLEncoder.encode(combinedText, "UTF-8")
                 val url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=tr&dt=t&q=$encodedText"
-                val request = Request.Builder().url(url).build()
+                val request = Request.Builder()
+                    .url(url)
+                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                    .build()
                 var chunkLines: List<String>? = null
                 okHttpClient.newCall(request).execute().use { response ->
                     if (response.isSuccessful) {
@@ -3271,36 +3168,17 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private fun translateTextGtx(text: String, targetLang: String = "tr", sourceLang: String = "en"): String {
+        if (text.isBlank()) return text
         try {
-            val prefix = text.substringBefore(": ")
-            val verseContent = text.substringAfter(": ")
-            if (verseContent.isEmpty() || verseContent == text) {
-                val encodedText = java.net.URLEncoder.encode(text, "UTF-8")
-                val url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=$sourceLang&tl=$targetLang&dt=t&q=$encodedText"
-                val request = Request.Builder().url(url).build()
-                okHttpClient.newCall(request).execute().use { response ->
-                    if (response.isSuccessful) {
-                        val bodyStr = response.body?.string() ?: ""
-                        val jsonArray = org.json.JSONArray(bodyStr)
-                        val sentencesArray = jsonArray.optJSONArray(0)
-                        if (sentencesArray != null) {
-                            val sb = StringBuilder()
-                            for (i in 0 until sentencesArray.length()) {
-                                val sentence = sentencesArray.optJSONArray(i)
-                                if (sentence != null) {
-                                    sb.append(sentence.optString(0))
-                                }
-                            }
-                            return sb.toString().trim()
-                        }
-                    }
-                }
-                return text
-            }
-            
+            val prefix = if (text.contains(": ")) text.substringBefore(": ") else ""
+            val verseContent = if (text.contains(": ")) text.substringAfter(": ") else text
+
             val encodedText = java.net.URLEncoder.encode(verseContent, "UTF-8")
             val url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=$sourceLang&tl=$targetLang&dt=t&q=$encodedText"
-            val request = Request.Builder().url(url).build()
+            val request = Request.Builder()
+                .url(url)
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                .build()
             okHttpClient.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {
                     val bodyStr = response.body?.string() ?: ""
@@ -3315,7 +3193,9 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                             }
                         }
                         val translatedText = sb.toString().trim()
-                        return "$prefix: $translatedText"
+                        if (translatedText.isNotBlank()) {
+                            return if (prefix.isNotEmpty()) "$prefix: $translatedText" else translatedText
+                        }
                     }
                 }
             }
@@ -3323,6 +3203,268 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             android.util.Log.e("ScriptureViewModel", "GTX Translation failed for: $text", e)
         }
         return text
+    }
+
+    private suspend fun fetchChapterContentInternal(
+        bookId: String,
+        bibleBook: com.example.data.model.BibleBook,
+        chapterNumber: Int
+    ): Pair<List<String>, List<String>> = withContext(Dispatchers.IO) {
+        val englishVerses = mutableListOf<String>()
+        val originalParagraphsList = mutableListOf<String>()
+
+        try {
+            when (bookId) {
+                "torah" -> {
+                    val encodedBookName = bibleBook.nameEnglish.replace(" ", "%20")
+                    val sefariaUrl = "https://www.sefaria.org/api/texts/$encodedBookName.$chapterNumber?context=0"
+                    val request = Request.Builder().url(sefariaUrl).build()
+                    okHttpClient.newCall(request).execute().use { response ->
+                        if (response.isSuccessful) {
+                            val bodyStr = response.body?.string() ?: ""
+                            val json = JSONObject(bodyStr)
+                            val engJA = json.optJSONArray("text")
+                            if (engJA != null) {
+                                for (i in 0 until engJA.length()) {
+                                    val cleanText = engJA.optString(i).replace(Regex("<[^>]*>"), "")
+                                    englishVerses.add("${i + 1}: $cleanText")
+                                }
+                            }
+                            val hebJA = json.optJSONArray("he")
+                            if (hebJA != null) {
+                                for (i in 0 until hebJA.length()) {
+                                    val cleanHeb = hebJA.optString(i).replace(Regex("<[^>]*>"), "")
+                                    originalParagraphsList.add("${i + 1}: $cleanHeb")
+                                }
+                            }
+                        }
+                    }
+                }
+                "talmud" -> {
+                    val pageNum = 2 + (chapterNumber - 1) / 2
+                    val side = if (chapterNumber % 2 == 1) "a" else "b"
+                    val daf = "$pageNum$side"
+                    val sefariaUrl = "https://www.sefaria.org/api/texts/${bibleBook.id}.$daf?context=0"
+                    val request = Request.Builder().url(sefariaUrl).build()
+                    okHttpClient.newCall(request).execute().use { response ->
+                        if (response.isSuccessful) {
+                            val bodyStr = response.body?.string() ?: ""
+                            val json = JSONObject(bodyStr)
+                            val engJA = json.optJSONArray("text")
+                            if (engJA != null) {
+                                for (i in 0 until engJA.length()) {
+                                    val cleanText = engJA.optString(i).replace(Regex("<[^>]*>"), "")
+                                    englishVerses.add("${i + 1}: $cleanText")
+                                }
+                            }
+                            val hebJA = json.optJSONArray("he")
+                            if (hebJA != null) {
+                                for (i in 0 until hebJA.length()) {
+                                    val cleanHeb = hebJA.optString(i).replace(Regex("<[^>]*>"), "")
+                                    originalParagraphsList.add("${i + 1}: $cleanHeb")
+                                }
+                            }
+                        }
+                    }
+                }
+                "bukhari" -> {
+                    val cacheFileEng = java.io.File(getApplication<Application>().filesDir, "eng-bukhari.min.json")
+                    val cacheFileAra = java.io.File(getApplication<Application>().filesDir, "ara-bukhari.min.json")
+                    
+                    if (!cacheFileEng.exists()) {
+                        val bukhariUrl = "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/eng-bukhari.min.json"
+                        downloadFileToLocal(bukhariUrl, cacheFileEng)
+                    }
+                    if (!cacheFileAra.exists()) {
+                        val bukhariAraUrl = "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari.min.json"
+                        downloadFileToLocal(bukhariAraUrl, cacheFileAra)
+                    }
+                    
+                    val bookNumber = bibleBook.bookNumber
+                    val matchedEngHadiths = getBukhariHadithsForBook(bookNumber, isArabic = false)
+                    val matchedAraHadiths = getBukhariHadithsForBook(bookNumber, isArabic = true)
+                    
+                    if (matchedEngHadiths.isNotEmpty()) {
+                        for (idx in 0 until matchedEngHadiths.size) {
+                            val targetEng = matchedEngHadiths[idx]
+                            val hNum = targetEng.optInt("hadithnumber", idx + 1)
+                            val textEng = targetEng.optString("text", "")
+                            englishVerses.add("Hadis $hNum: $textEng")
+                            
+                            val targetAra = matchedAraHadiths.getOrNull(idx)
+                            if (targetAra != null) {
+                                val textAra = targetAra.optString("text", "")
+                                originalParagraphsList.add("Hadis $hNum: $textAra")
+                            } else {
+                                originalParagraphsList.add("Hadis $hNum: $textEng")
+                            }
+                        }
+                    }
+                }
+                "gita" -> {
+                    val cacheFileGita = java.io.File(getApplication<Application>().filesDir, "gita-verses.min.json")
+                    if (!cacheFileGita.exists()) {
+                        val gitaUrl = "https://raw.githubusercontent.com/gita/gita/main/data/verse.json"
+                        try { downloadFileToLocal(gitaUrl, cacheFileGita) } catch (e: Exception) { android.util.Log.e("ScriptureViewModel", "Failed to download Gita verses", e) }
+                    }
+
+                    val cacheFileGitaTrans = java.io.File(getApplication<Application>().filesDir, "gita-translations.min.json")
+                    if (!cacheFileGitaTrans.exists()) {
+                        val gitaTransUrl = "https://raw.githubusercontent.com/gita/gita/main/data/translation.json"
+                        try { downloadFileToLocal(gitaTransUrl, cacheFileGitaTrans) } catch (e: Exception) { android.util.Log.e("ScriptureViewModel", "Failed to download Gita translations", e) }
+                    }
+
+                    val sivanandaTranslations = mutableMapOf<Int, String>()
+                    if (cacheFileGitaTrans.exists()) {
+                        try {
+                            val transJsonStr = cacheFileGitaTrans.readText()
+                            val transJA = org.json.JSONArray(transJsonStr)
+                            for (i in 0 until transJA.length()) {
+                                val tObj = transJA.getJSONObject(i)
+                                if (tObj.optInt("author_id") == 16) {
+                                    val vId = tObj.optInt("verse_id")
+                                    val desc = tObj.optString("description").trim()
+                                    if (vId > 0 && desc.isNotBlank()) {
+                                        sivanandaTranslations[vId] = desc
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("ScriptureViewModel", "Error reading gita translations json", e)
+                        }
+                    }
+
+                    var loadedFromGitaJson = false
+                    if (cacheFileGita.exists()) {
+                        try {
+                            val jsonStr = cacheFileGita.readText()
+                            val versesJA = org.json.JSONArray(jsonStr)
+                            for (i in 0 until versesJA.length()) {
+                                val vObj = versesJA.getJSONObject(i)
+                                if (vObj.optInt("chapter_number") == chapterNumber) {
+                                    val vNum = vObj.optInt("verse_number")
+                                    val vId = vObj.optInt("id")
+                                    val sanskritText = vObj.optString("text").replace("\n", " ").trim()
+                                    
+                                    val englishTrans = sivanandaTranslations[vId]
+                                    val verseText = if (!englishTrans.isNullOrBlank()) {
+                                        englishTrans
+                                    } else {
+                                        val translit = vObj.optString("transliteration").replace("\n", " ").trim()
+                                        val meanings = vObj.optString("word_meanings").replace("\n", " ").trim()
+                                        if (translit.isNotBlank()) translit else meanings
+                                    }
+
+                                    if (verseText.isNotBlank()) {
+                                        englishVerses.add("$vNum: $verseText")
+                                    } else {
+                                        englishVerses.add("$vNum: $sanskritText")
+                                    }
+                                    originalParagraphsList.add("$vNum: $sanskritText")
+                                }
+                            }
+                            if (englishVerses.isNotEmpty()) {
+                                loadedFromGitaJson = true
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("ScriptureViewModel", "Error reading gita json", e)
+                        }
+                    }
+
+                    if (!loadedFromGitaJson) {
+                        for ((idx, p) in com.example.data.model.books.GitaContent.paragraphs.withIndex()) {
+                            englishVerses.add(p)
+                            val orig = com.example.data.model.books.GitaContent.originalParagraphs.getOrNull(idx) ?: p
+                            originalParagraphsList.add(orig)
+                        }
+                    }
+                }
+                else -> {
+                    // Bible / Sermon
+                    val normalizedName = normalizeBibleApiBookName(bibleBook.nameEnglish)
+                    val encodedBookName = normalizedName.replace(" ", "%20")
+                    val bibleUrl = "https://bible-api.com/$encodedBookName%20$chapterNumber"
+                    val request = Request.Builder().url(bibleUrl).build()
+                    var fetchSuccess = false
+                    try {
+                        okHttpClient.newCall(request).execute().use { response ->
+                            if (response.isSuccessful) {
+                                val bodyStr = response.body?.string() ?: ""
+                                val json = JSONObject(bodyStr)
+                                val versesJA = json.optJSONArray("verses")
+                                if (versesJA != null && versesJA.length() > 0) {
+                                    for (i in 0 until versesJA.length()) {
+                                        val vObj = versesJA.getJSONObject(i)
+                                        val vNum = vObj.getInt("verse")
+                                        val vText = vObj.getString("text").trim()
+                                        englishVerses.add("$vNum: $vText")
+                                        originalParagraphsList.add("$vNum: $vText")
+                                    }
+                                    fetchSuccess = true
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.w("ScriptureViewModel", "Primary Bible API call failed for $normalizedName $chapterNumber", e)
+                    }
+
+                    if (!fetchSuccess) {
+                        val fallbackUrl = "https://bible-api.com/$encodedBookName%20$chapterNumber?translation=kjv"
+                        val fallbackReq = Request.Builder().url(fallbackUrl).build()
+                        try {
+                            okHttpClient.newCall(fallbackReq).execute().use { response ->
+                                if (response.isSuccessful) {
+                                    val bodyStr = response.body?.string() ?: ""
+                                    val json = JSONObject(bodyStr)
+                                    val versesJA = json.optJSONArray("verses")
+                                    if (versesJA != null && versesJA.length() > 0) {
+                                        for (i in 0 until versesJA.length()) {
+                                            val vObj = versesJA.getJSONObject(i)
+                                            val vNum = vObj.getInt("verse")
+                                            val vText = vObj.getString("text").trim()
+                                            englishVerses.add("$vNum: $vText")
+                                            originalParagraphsList.add("$vNum: $vText")
+                                        }
+                                        fetchSuccess = true
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.w("ScriptureViewModel", "Secondary Bible API call failed for $normalizedName $chapterNumber", e)
+                        }
+                    }
+
+                    if (!fetchSuccess) {
+                        val tertiaryUrl = "https://labs.bible.org/api/?passage=$encodedBookName%20$chapterNumber&type=json"
+                        val tertiaryReq = Request.Builder().url(tertiaryUrl).build()
+                        try {
+                            okHttpClient.newCall(tertiaryReq).execute().use { response ->
+                                if (response.isSuccessful) {
+                                    val bodyStr = response.body?.string() ?: ""
+                                    val versesJA = org.json.JSONArray(bodyStr)
+                                    if (versesJA.length() > 0) {
+                                        for (i in 0 until versesJA.length()) {
+                                            val vObj = versesJA.getJSONObject(i)
+                                            val vNum = vObj.optString("verse")
+                                            val vText = android.text.Html.fromHtml(vObj.optString("text"), android.text.Html.FROM_HTML_MODE_LEGACY).toString().trim()
+                                            englishVerses.add("$vNum: $vText")
+                                            originalParagraphsList.add("$vNum: $vText")
+                                        }
+                                        fetchSuccess = true
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.w("ScriptureViewModel", "Tertiary Bible API call failed", e)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ScriptureViewModel", "fetchChapterContentInternal failed for $bookId / ${bibleBook.nameEnglish} $chapterNumber", e)
+        }
+
+        Pair(englishVerses, originalParagraphsList)
     }
 
     fun getBibleChapterFile(bookId: String, bookName: String, chapterNumber: Int): java.io.File {
@@ -3347,148 +3489,16 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                     val paragraphsList = mutableListOf<String>()
                     val originalParagraphsList = mutableListOf<String>()
                     val englishVerses = mutableListOf<String>()
-                    when (bookId) {
-                        "torah" -> {
-                            val encodedBookName = bibleBook.nameEnglish.replace(" ", "%20")
-                            val sefariaUrl = "https://www.sefaria.org/api/texts/$encodedBookName.$chapterNumber?context=0"
-                            val request = Request.Builder().url(sefariaUrl).build()
-                            okHttpClient.newCall(request).execute().use { response ->
-                                if (response.isSuccessful) {
-                                    val bodyStr = response.body?.string() ?: ""
-                                    val json = JSONObject(bodyStr)
-                                    val engJA = json.optJSONArray("text")
-                                    if (engJA != null) {
-                                        for (i in 0 until engJA.length()) {
-                                            val cleanText = engJA.optString(i).replace(Regex("<[^>]*>"), "")
-                                            englishVerses.add("${i + 1}: $cleanText")
-                                        }
-                                    }
-                                    val hebJA = json.optJSONArray("he")
-                                    if (hebJA != null) {
-                                        for (i in 0 until hebJA.length()) {
-                                            val cleanHeb = hebJA.optString(i).replace(Regex("<[^>]*>"), "")
-                                            originalParagraphsList.add("${i + 1}: $cleanHeb")
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        "talmud" -> {
-                            val pageNum = 2 + (chapterNumber - 1) / 2
-                            val side = if (chapterNumber % 2 == 1) "a" else "b"
-                            val daf = "$pageNum$side"
-                            val sefariaUrl = "https://www.sefaria.org/api/texts/${bibleBook.id}.$daf?context=0"
-                            val request = Request.Builder().url(sefariaUrl).build()
-                            okHttpClient.newCall(request).execute().use { response ->
-                                if (response.isSuccessful) {
-                                    val bodyStr = response.body?.string() ?: ""
-                                    val json = JSONObject(bodyStr)
-                                    val engJA = json.optJSONArray("text")
-                                    if (engJA != null) {
-                                        for (i in 0 until engJA.length()) {
-                                            val cleanText = engJA.optString(i).replace(Regex("<[^>]*>"), "")
-                                            englishVerses.add("${i + 1}: $cleanText")
-                                        }
-                                    }
-                                    val hebJA = json.optJSONArray("he")
-                                    if (hebJA != null) {
-                                        for (i in 0 until hebJA.length()) {
-                                            val cleanHeb = hebJA.optString(i).replace(Regex("<[^>]*>"), "")
-                                            originalParagraphsList.add("${i + 1}: $cleanHeb")
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        "bukhari" -> {
-                            val cacheFileEng = java.io.File(getApplication<Application>().filesDir, "eng-bukhari.min.json")
-                            val cacheFileAra = java.io.File(getApplication<Application>().filesDir, "ara-bukhari.min.json")
-                            
-                            if (!cacheFileEng.exists()) {
-                                val bukhariUrl = "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/eng-bukhari.min.json"
-                                downloadFileToLocal(bukhariUrl, cacheFileEng)
-                            }
-                            if (!cacheFileAra.exists()) {
-                                val bukhariAraUrl = "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari.min.json"
-                                downloadFileToLocal(bukhariAraUrl, cacheFileAra)
-                            }
-                            
-                            if (cacheFileEng.exists()) {
-                                val engJsonStr = cacheFileEng.readText()
-                                val engJson = JSONObject(engJsonStr)
-                                val engHadithsJA = engJson.getJSONArray("hadiths")
-                                val bookNumber = bibleBook.bookNumber
-                                val matchedEngHadiths = mutableListOf<JSONObject>()
-                                for (i in 0 until engHadithsJA.length()) {
-                                    val hObj = engHadithsJA.getJSONObject(i)
-                                    val refObj = hObj.optJSONObject("reference")
-                                    if (refObj != null && refObj.optInt("book") == bookNumber) {
-                                        matchedEngHadiths.add(hObj)
-                                    }
-                                }
-                                var matchedAraHadiths = mutableListOf<JSONObject>()
-                                if (cacheFileAra.exists()) {
-                                    val araJsonStr = cacheFileAra.readText()
-                                    val araJson = JSONObject(araJsonStr)
-                                    val araHadithsJA = araJson.getJSONArray("hadiths")
-                                    for (i in 0 until araHadithsJA.length()) {
-                                        val hObj = araHadithsJA.getJSONObject(i)
-                                        val refObj = hObj.optJSONObject("reference")
-                                        if (refObj != null && refObj.optInt("book") == bookNumber) {
-                                            matchedAraHadiths.add(hObj)
-                                        }
-                                    }
-                                }
-                                
-                                if (matchedEngHadiths.isNotEmpty()) {
-                                    for (idx in 0 until matchedEngHadiths.size) {
-                                        val targetEng = matchedEngHadiths[idx]
-                                        val hNum = targetEng.optInt("hadithnumber", idx + 1)
-                                        val textEng = targetEng.getString("text")
-                                        englishVerses.add("Hadis $hNum: $textEng")
-                                        
-                                        val targetAra = matchedAraHadiths.getOrNull(idx)
-                                        if (targetAra != null) {
-                                            val textAra = targetAra.getString("text")
-                                            originalParagraphsList.add("Hadis $hNum: $textAra")
-                                        } else {
-                                            originalParagraphsList.add("Hadis $hNum: $textEng")
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        else -> {
-                            val encodedBookName = bibleBook.nameEnglish.replace(" ", "%20")
-                            val bibleUrl = "https://bible-api.com/$encodedBookName+$chapterNumber"
-                            val request = Request.Builder().url(bibleUrl).build()
-                            okHttpClient.newCall(request).execute().use { response ->
-                                if (response.isSuccessful) {
-                                    val bodyStr = response.body?.string() ?: ""
-                                    val json = JSONObject(bodyStr)
-                                    val versesJA = json.getJSONArray("verses")
-                                    for (i in 0 until versesJA.length()) {
-                                        val vObj = versesJA.getJSONObject(i)
-                                        val vNum = vObj.getInt("verse")
-                                        val vText = vObj.getString("text").trim()
-                                        englishVerses.add("$vNum: $vText")
-                                        originalParagraphsList.add("$vNum: $vText")
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    val (fetchedEng, fetchedOrig) = fetchChapterContentInternal(bookId, bibleBook, chapterNumber)
+                    englishVerses.addAll(fetchedEng)
+                    originalParagraphsList.addAll(fetchedOrig)
                     
                     if (englishVerses.isNotEmpty()) {
                         if (_readerSettings.value.language == AppLanguage.EN) {
                             paragraphsList.addAll(englishVerses)
                         } else {
-                            val deferredTranslations = englishVerses.map { verse ->
-                                async {
-                                    translateTextGtx(verse)
-                                }
-                            }
-                            paragraphsList.addAll(deferredTranslations.awaitAll())
+                            val batch = translateVersesBatch(englishVerses)
+                            paragraphsList.addAll(batch)
                         }
                     }
                     

@@ -256,7 +256,7 @@ class DailyVerseReceiver : BroadcastReceiver() {
                     }
                     val selectedTorah = torahBooks.random()
                     val chapter = (1..selectedTorah.third).random()
-                    val url = "https://bible-api.com/${selectedTorah.first}+$chapter"
+                    val url = "https://bible-api.com/${selectedTorah.first}%20$chapter"
                     val request = Request.Builder().url(url).build()
                     client.newCall(request).execute().use { response ->
                         if (!response.isSuccessful) throw Exception("Torah Bible API failure")
@@ -276,7 +276,7 @@ class DailyVerseReceiver : BroadcastReceiver() {
                 "sermon" -> {
                     // Random sermon chapter from Matthew (5, 6, 7)
                     val chapter = (5..7).random()
-                    val url = "https://bible-api.com/matthew+$chapter"
+                    val url = "https://bible-api.com/matthew%20$chapter"
                     val request = Request.Builder().url(url).build()
                     client.newCall(request).execute().use { response ->
                         if (!response.isSuccessful) throw Exception("Sermon Bible API failure")

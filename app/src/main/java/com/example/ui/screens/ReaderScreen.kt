@@ -554,17 +554,7 @@ fun ReaderScreen(
                                         modifier = Modifier.size(24.dp),
                                         strokeWidth = 2.dp
                                     )
-                                } else if (isDownloaded) {
-                                    IconButton(
-                                        onClick = { viewModel.deleteBookDownload(book.id) }
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.DeleteOutline,
-                                            contentDescription = if (lang == AppLanguage.EN) "Delete Download" else "İndirmeyi Sil",
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
-                                    }
-                                } else {
+                                } else if (!isDownloaded) {
                                     Button(
                                         onClick = { viewModel.downloadBook(book.id) },
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),

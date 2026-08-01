@@ -44,20 +44,27 @@ private val SepiaColorScheme = lightColorScheme(
     onError = Color.White
 )
 
+private val GoldPrimaryDark = Color(0xFFD4AF37)
+private val DarkOutlineColor = Color(0xFF484E4A)
+private val DarkSurfaceVariantColor = Color(0xFF282C2A)
+
 private val DarkColorScheme = darkColorScheme(
-    primary = DarkText,
-    onPrimary = PrimaryBlue,
+    primary = GoldPrimaryDark,
+    onPrimary = Color(0xFF121413),
+    primaryContainer = Color(0xFF332D1B),
+    onPrimaryContainer = GoldPrimaryDark,
     background = DarkBackground,
     onBackground = DarkText,
     surface = DarkCard,
     onSurface = DarkText,
-    surfaceVariant = DarkBackground,
+    surfaceVariant = DarkSurfaceVariantColor,
     onSurfaceVariant = DarkTextSecondary,
-    outline = DarkCard,
+    outline = DarkOutlineColor,
+    outlineVariant = Color(0xFF3B403D),
     secondary = SacredGold,
-    onSecondary = Color.White,
-    secondaryContainer = DarkCard,
-    onSecondaryContainer = DarkTextSecondary,
+    onSecondary = Color.Black,
+    secondaryContainer = Color(0xFF2E3330),
+    onSecondaryContainer = Color(0xFFF0ECE1),
     error = ErrorRed,
     onError = Color.White
 )

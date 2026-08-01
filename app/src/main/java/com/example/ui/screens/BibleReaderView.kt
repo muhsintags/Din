@@ -403,6 +403,72 @@ fun BibleReaderView(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
+                    // Download Entire Book Banner Card
+                    val downloadedBooks by viewModel.downloadedBooks.collectAsState()
+                    val downloadProgress by viewModel.downloadProgress.collectAsState()
+                    val isBookDownloaded = downloadedBooks.contains(book.id)
+                    val bookProgress = downloadProgress[book.id]
+
+                    if (!isBookDownloaded || bookProgress != null) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.15f)
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.CloudDownload,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (lang == AppLanguage.EN) "Download Entire Book" else "Tüm Kitabı Cihaza İndir",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = if (bookProgress != null) {
+                                            if (lang == AppLanguage.EN) "Downloading: %${(bookProgress * 100).toInt()}" else "İndiriliyor: %${(bookProgress * 100).toInt()}"
+                                        } else {
+                                            if (lang == AppLanguage.EN) "Download all sections to read offline anytime." else "Tüm bölümleri cihazınıza kaydedip internetsiz okuyun."
+                                        },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    if (bookProgress != null) {
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        LinearProgressIndicator(
+                                            progress = { bookProgress },
+                                            color = SacredGold,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                }
+                                if (bookProgress == null) {
+                                    Button(
+                                        onClick = { viewModel.downloadBook(book.id) },
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(if (lang == AppLanguage.EN) "Download" else "İndir", style = MaterialTheme.typography.labelMedium)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Search Bar
                     OutlinedTextField(
                         value = searchQuery,
@@ -809,23 +875,7 @@ fun BibleReaderView(
                                                 strokeWidth = 3.dp
                                             )
                                         } else {
-                                            if (isChapterDownloaded) {
-                                                IconButton(
-                                                    onClick = {
-                                                        viewModel.deleteBibleChapterDownload(
-                                                            book.id,
-                                                            currentSelectedBook!!.id,
-                                                            currentSelectedChapter!!
-                                                        )
-                                                    }
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Filled.Delete,
-                                                        contentDescription = if (lang == AppLanguage.EN) "Delete download" else "İndirmeyi sil",
-                                                        tint = MaterialTheme.colorScheme.error
-                                                    )
-                                                }
-                                            } else {
+                                            if (!isChapterDownloaded) {
                                                 IconButton(
                                                     onClick = {
                                                         viewModel.downloadBibleChapter(

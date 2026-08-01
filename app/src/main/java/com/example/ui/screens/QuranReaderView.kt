@@ -340,71 +340,54 @@ fun QuranReaderView(
                     val isQuranDownloaded = downloadedBooks.contains("quran")
                     val quranProgress = downloadProgress["quran"]
 
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isQuranDownloaded) 
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-                            else 
-                                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.15f)
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            if (isQuranDownloaded) SacredGold.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    if (!isQuranDownloaded || quranProgress != null) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.15f)
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Icon(
-                                imageVector = if (isQuranDownloaded) Icons.Filled.CloudDone else Icons.Filled.CloudDownload,
-                                contentDescription = null,
-                                tint = if (isQuranDownloaded) SacredGold else MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(32.dp)
-                            )
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = if (isQuranDownloaded) {
-                                        if (lang == AppLanguage.EN) "All Surahs Saved!" else "Tüm Sureler Cihazda Kayıtlı!"
-                                    } else {
-                                        if (lang == AppLanguage.EN) "Download Entire Quran" else "Tüm Kitabı Cihaza İndir"
-                                    },
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.CloudDownload,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(32.dp)
                                 )
-                                Text(
-                                    text = if (isQuranDownloaded) {
-                                        if (lang == AppLanguage.EN) "All 114 surahs are saved to your device. Read anytime without internet." else "114 surenin tamamı arapça ve türkçe mealleriyle cihaza kaydedildi. İnternetsiz okuyabilirsiniz."
-                                    } else if (quranProgress != null) {
-                                        if (lang == AppLanguage.EN) "Downloading: %${(quranProgress * 100).toInt()}" else "İndiriliyor: %${(quranProgress * 100).toInt()}"
-                                    } else {
-                                        if (lang == AppLanguage.EN) "Read and listen to all 114 surahs offline even when you don't have internet access." else "İnternetiniz yokken bile tüm 114 sureyi arapça ve türkçe mealleriyle anında okuyabilirsiniz."
-                                    },
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                if (quranProgress != null) {
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    LinearProgressIndicator(
-                                        progress = { quranProgress },
-                                        color = SacredGold,
-                                        modifier = Modifier.fillMaxWidth()
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (lang == AppLanguage.EN) "Download Entire Quran" else "Tüm Kitabı Cihaza İndir",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold
                                     )
-                                }
-                            }
-                            if (quranProgress == null) {
-                                if (isQuranDownloaded) {
-                                    IconButton(onClick = { viewModel.deleteBookDownload("quran") }) {
-                                        Icon(
-                                            imageVector = Icons.Filled.DeleteOutline,
-                                            contentDescription = if (lang == AppLanguage.EN) "Delete Download" else "İndirmeyi Sil",
-                                            tint = MaterialTheme.colorScheme.error
+                                    Text(
+                                        text = if (quranProgress != null) {
+                                            if (lang == AppLanguage.EN) "Downloading: %${(quranProgress * 100).toInt()}" else "İndiriliyor: %${(quranProgress * 100).toInt()}"
+                                        } else {
+                                            if (lang == AppLanguage.EN) "Read and listen to all 114 surahs offline even when you don't have internet access." else "İnternetiniz yokken bile tüm 114 sureyi arapça ve türkçe mealleriyle anında okuyabilirsiniz."
+                                        },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    if (quranProgress != null) {
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        LinearProgressIndicator(
+                                            progress = { quranProgress },
+                                            color = SacredGold,
+                                            modifier = Modifier.fillMaxWidth()
                                         )
                                     }
-                                } else {
+                                }
+                                if (quranProgress == null) {
                                     Button(
                                         onClick = { viewModel.downloadBook("quran") },
                                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),

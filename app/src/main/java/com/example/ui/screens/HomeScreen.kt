@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.data.model.Book
+import com.example.ui.components.StoryVerseShareDialog
 import com.example.ui.theme.SacredGold
 import com.example.ui.util.AppLanguage
 import com.example.ui.util.Loc
@@ -108,6 +109,7 @@ fun HomeScreen(
                     val selectedBooks by viewModel.selectedBooksForVerse.collectAsState()
                     val activeVerseState by viewModel.activeVerse.collectAsState()
                     val isVerseLoading by viewModel.isVerseLoading.collectAsState()
+                    var showShareDialog by remember { mutableStateOf(false) }
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -132,16 +134,33 @@ fun HomeScreen(
                             )
                         }
 
-                        IconButton(
-                            onClick = { viewModel.refreshActiveVerse() },
-                            modifier = Modifier.size(36.dp).testTag("refresh_verse_button")
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Filled.Refresh,
-                                contentDescription = Loc.get("refresh_verse", lang),
-                                tint = SacredGold,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            IconButton(
+                                onClick = { showShareDialog = true },
+                                modifier = Modifier.size(36.dp).testTag("share_verse_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.AutoAwesome,
+                                    contentDescription = "Şablonla Paylaş",
+                                    tint = SacredGold,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            IconButton(
+                                onClick = { viewModel.refreshActiveVerse() },
+                                modifier = Modifier.size(36.dp).testTag("refresh_verse_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Refresh,
+                                    contentDescription = Loc.get("refresh_verse", lang),
+                                    tint = SacredGold,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
 
@@ -259,9 +278,43 @@ fun HomeScreen(
                                                 letterSpacing = 1.sp
                                             )
                                         }
+
+                                        AssistChip(
+                                            onClick = { showShareDialog = true },
+                                            label = {
+                                                Text(
+                                                    text = if (lang == AppLanguage.EN) "Share with Story Template" else "NGL & Hikaye Şablonuyla Paylaş",
+                                                    style = MaterialTheme.typography.labelSmall
+                                                )
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    imageVector = Icons.Filled.AutoAwesome,
+                                                    contentDescription = null,
+                                                    tint = SacredGold,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            },
+                                            colors = AssistChipDefaults.assistChipColors(
+                                                containerColor = SacredGold.copy(alpha = 0.12f),
+                                                labelColor = SacredGold
+                                            ),
+                                            border = AssistChipDefaults.assistChipBorder(
+                                                enabled = true,
+                                                borderColor = SacredGold.copy(alpha = 0.3f)
+                                            )
+                                        )
                                     }
                                 }
                             }
+                        }
+
+                        if (showShareDialog) {
+                            StoryVerseShareDialog(
+                                verseText = activeVerse.text,
+                                reference = activeVerse.reference,
+                                onDismiss = { showShareDialog = false }
+                            )
                         }
                     }
                 }

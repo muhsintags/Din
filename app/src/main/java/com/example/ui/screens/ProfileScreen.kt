@@ -168,6 +168,7 @@ fun ProfileScreen(
                                 AsyncImage(
                                     model = tempPhotoUrl,
                                     contentDescription = "Profil Önizleme",
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize().clip(CircleShape)
                                 )
                             } else {
@@ -378,6 +379,7 @@ fun ProfileScreen(
                             AsyncImage(
                                 model = userState.photoUrl,
                                 contentDescription = if (lang == AppLanguage.EN) "Profile Picture" else "Profil Resmi",
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .clip(CircleShape)
@@ -470,21 +472,26 @@ fun ProfileScreen(
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 16.dp),
+                                    .padding(vertical = 12.dp, horizontal = 4.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Text(
                                     text = value,
                                     fontFamily = FontFamily.Serif,
-                                    fontSize = 24.sp,
+                                    fontSize = 22.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
                                     text = label,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    lineHeight = 13.sp,
+                                    modifier = Modifier.padding(horizontal = 2.dp)
                                 )
                             }
                         }
