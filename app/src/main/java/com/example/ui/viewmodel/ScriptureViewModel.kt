@@ -125,13 +125,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun getQuranFile(surahNumber: Int): java.io.File {
         val lang = _readerSettings.value.language.name
-        val langFile = java.io.File(getApplication<Application>().filesDir, "surah_${surahNumber}_$lang.json")
-        if (langFile.exists()) return langFile
-        if (_readerSettings.value.language == AppLanguage.TR) {
-            val oldFile = java.io.File(getApplication<Application>().filesDir, "surah_$surahNumber.json")
-            if (oldFile.exists()) return oldFile
-        }
-        return langFile
+        return java.io.File(getApplication<Application>().filesDir, "surah_${surahNumber}_${lang}_v3.json")
     }
 
     fun loadSurahContent(surahNumber: Int) {
@@ -141,7 +135,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             stopAudio()
 
             val langCode = _readerSettings.value.language.name
-            val cacheKey = "surah_${surahNumber}_$langCode"
+            val cacheKey = "surah_${surahNumber}_${langCode}_v3"
             val cachedContent = _surahInMemoryCache[cacheKey]
             if (cachedContent != null && cachedContent.verses.isNotEmpty()) {
                 _currentSurahContent.value = cachedContent
@@ -194,7 +188,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             withContext(Dispatchers.IO) {
                 try {
                     var fetchedContent: QuranSurahContent? = null
-                    val quranEdition = if (_readerSettings.value.language == AppLanguage.EN) "en.sahih" else "tr.diyanet"
+                    val quranEdition = if (_readerSettings.value.language == AppLanguage.EN) "en.sahih" else "tr.yazir"
                     
                     // Try 1: Multi-edition URL
                     try {
@@ -225,11 +219,16 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                                         val trObj = turkishVerses.getJSONObject(i)
                                         val auObj = audioVerses.getJSONObject(i)
 
+                                        val vNum = arObj.getInt("numberInSurah")
+                                        val rawAr = arObj.getString("text")
+                                        val rawTr = trObj.getString("text")
+                                        val (cleanAr, cleanTr) = cleanQuranVerseText(surahNumber, vNum, rawAr, rawTr)
+
                                         versesList.add(
                                             QuranVerse(
-                                                number = arObj.getInt("numberInSurah"),
-                                                textArabic = arObj.getString("text"),
-                                                textTurkish = trObj.getString("text"),
+                                                number = vNum,
+                                                textArabic = cleanAr,
+                                                textTurkish = cleanTr,
                                                 audioUrl = auObj.optString("audio", "")
                                             )
                                         )
@@ -284,9 +283,10 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                                 val verseNum = arObj.optInt("numberInSurah", i + 1)
                                 val textAr = arObj.optString("text", "")
                                 val textTr = trObj?.optString("text", textAr) ?: textAr
+                                val (cleanAr, cleanTr) = cleanQuranVerseText(surahNumber, verseNum, textAr, textTr)
                                 val ayahGlobalNum = arObj.optInt("number", 1)
                                 val audioUrl = "https://cdn.islamic.network/quran/audio/128/ar.alafasy/$ayahGlobalNum.mp3"
-                                versesList.add(QuranVerse(verseNum, textAr, textTr, audioUrl))
+                                versesList.add(QuranVerse(verseNum, cleanAr, cleanTr, audioUrl))
                             }
 
                             fetchedContent = QuranSurahContent(surahNumber, nameArabic, englishName, versesList)
@@ -365,7 +365,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
 
                     val fetched = withContext(Dispatchers.IO) {
                         try {
-                            val quranEdition = if (_readerSettings.value.language == AppLanguage.EN) "en.sahih" else "tr.diyanet"
+                            val quranEdition = if (_readerSettings.value.language == AppLanguage.EN) "en.sahih" else "tr.yazir"
                             val url = "https://api.alquran.cloud/v1/surah/$surahNum/editions/quran-uthmani,$quranEdition,ar.alafasy"
                             val request = Request.Builder().url(url).build()
                             okHttpClient.newCall(request).execute().use { response ->
@@ -390,11 +390,16 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                                         val trObj = turkishVerses.getJSONObject(i)
                                         val auObj = audioVerses.getJSONObject(i)
 
+                                        val vNum = arObj.getInt("numberInSurah")
+                                        val rawAr = arObj.getString("text")
+                                        val rawTr = trObj.getString("text")
+                                        val (cleanAr, cleanTr) = cleanQuranVerseText(surahNum, vNum, rawAr, rawTr)
+
                                         versesList.add(
                                             QuranVerse(
-                                                number = arObj.getInt("numberInSurah"),
-                                                textArabic = arObj.getString("text"),
-                                                textTurkish = trObj.getString("text"),
+                                                number = vNum,
+                                                textArabic = cleanAr,
+                                                textTurkish = cleanTr,
                                                 audioUrl = auObj.getString("audio")
                                             )
                                         )
@@ -542,7 +547,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                 _isSurahLoading.value = true
                 val fetched = withContext(Dispatchers.IO) {
                     try {
-                        val quranEdition = if (_readerSettings.value.language == AppLanguage.EN) "en.sahih" else "tr.diyanet"
+                        val quranEdition = if (_readerSettings.value.language == AppLanguage.EN) "en.sahih" else "tr.yazir"
                         val url = "https://api.alquran.cloud/v1/surah/$surahNumber/editions/quran-uthmani,$quranEdition,ar.alafasy"
                         val request = Request.Builder().url(url).build()
                         okHttpClient.newCall(request).execute().use { response ->
@@ -567,11 +572,16 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                                     val trObj = turkishVerses.getJSONObject(i)
                                     val auObj = audioVerses.getJSONObject(i)
 
+                                    val vNum = arObj.getInt("numberInSurah")
+                                    val rawAr = arObj.getString("text")
+                                    val rawTr = trObj.getString("text")
+                                    val (cleanAr, cleanTr) = cleanQuranVerseText(surahNumber, vNum, rawAr, rawTr)
+
                                     versesList.add(
                                         QuranVerse(
-                                            number = arObj.getInt("numberInSurah"),
-                                            textArabic = arObj.getString("text"),
-                                            textTurkish = trObj.getString("text"),
+                                            number = vNum,
+                                            textArabic = cleanAr,
+                                            textTurkish = cleanTr,
                                             audioUrl = auObj.getString("audio")
                                         )
                                     )
@@ -688,6 +698,72 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    private fun cleanQuranVerseText(surahNumber: Int, verseNumber: Int, textArabic: String, textTurkish: String): Pair<String, String> {
+        var cleanedAr = textArabic.trim()
+        var cleanedTr = textTurkish.trim()
+        if (surahNumber != 1 && surahNumber != 9 && verseNumber == 1) {
+            val bismillahAr = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"
+            if (cleanedAr.startsWith(bismillahAr)) {
+                cleanedAr = cleanedAr.removePrefix(bismillahAr).trim()
+            }
+            val bismillahTr = "Rahmân ve Rahîm olan Allah'ın adıyla."
+            if (cleanedTr.startsWith(bismillahTr)) {
+                cleanedTr = cleanedTr.removePrefix(bismillahTr).trim()
+            }
+            val bismillahEn = "In the name of Allah, the Entirely Merciful, the Especially Merciful."
+            if (cleanedTr.startsWith(bismillahEn)) {
+                cleanedTr = cleanedTr.removePrefix(bismillahEn).trim()
+            }
+        }
+        val finalAr = if (cleanedAr.isEmpty()) textArabic else cleanedAr
+        val finalTr = if (cleanedTr.isEmpty()) textTurkish else cleanedTr
+        return Pair(finalAr, finalTr)
+    }
+
+    fun prefetchAudioChunk(startIndex: Int, chunkSize: Int = 6) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val currentContent = _currentSurahContent.value
+            val currentBook = _activeBookContent.value
+            val isEn = _readerSettings.value.language == AppLanguage.EN
+
+            val urlsToFetch = mutableListOf<String>()
+
+            if (currentContent != null) {
+                val maxIndex = minOf(startIndex + chunkSize, currentContent.verses.size)
+                for (i in startIndex until maxIndex) {
+                    if (i >= 0 && i < currentContent.verses.size) {
+                        val vUrl = currentContent.verses[i].audioUrl
+                        if (vUrl.isNotEmpty()) urlsToFetch.add(vUrl)
+                    }
+                }
+            } else if (currentBook != null) {
+                val maxIndex = minOf(startIndex + chunkSize, currentBook.paragraphs.size)
+                for (i in startIndex until maxIndex) {
+                    if (i >= 0 && i < currentBook.paragraphs.size) {
+                        val pText = currentBook.paragraphs[i]
+                        val url = getBibleVerseAudioUrl(pText, isEn)
+                        if (url.isNotEmpty()) urlsToFetch.add(url)
+                    }
+                }
+            }
+
+            val jobs = urlsToFetch.map { url ->
+                async {
+                    try {
+                        val localFile = java.io.File(getApplication<Application>().cacheDir, "audio_${url.hashCode()}.mp3")
+                        if (!localFile.exists()) {
+                            val secureUrl = if (url.startsWith("http://")) url.replace("http://", "https://") else url
+                            downloadFileToLocal(secureUrl, localFile)
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("ScriptureViewModel", "Error prefetching audio chunk for $url", e)
+                    }
+                }
+            }
+            jobs.awaitAll()
+        }
+    }
+
     fun playAudio(url: String, verseIndex: Int) {
         viewModelScope.launch {
             try {
@@ -702,25 +778,32 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                 }
                 currentPlayingUrl.value = secureUrl
 
+                // Trigger chunk prefetching for 6 verses starting from current index
+                if (verseIndex >= 0) {
+                    prefetchAudioChunk(verseIndex, 6)
+                }
+
                 mediaPlayer?.release()
                 mediaPlayer = MediaPlayer().apply {
-                    // Set modern audio attributes for music streams
                     val attributes = android.media.AudioAttributes.Builder()
                         .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
                         .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
                         .build()
                     setAudioAttributes(attributes)
 
-                    // CHECK IF DOWNLOADED LOCALLY FIRST
                     val localFile = java.io.File(getApplication<Application>().cacheDir, "audio_${url.hashCode()}.mp3")
+                    
+                    // If file is not yet cached locally, download it first on IO thread
+                    withContext(Dispatchers.IO) {
+                        if (!localFile.exists()) {
+                            downloadFileToLocal(secureUrl, localFile)
+                        }
+                    }
+
                     if (localFile.exists()) {
                         setDataSource(localFile.absolutePath)
                     } else {
                         setDataSource(secureUrl)
-                        // Save to cache in background for next time
-                        viewModelScope.launch(Dispatchers.IO) {
-                            downloadFileToLocal(url, localFile)
-                        }
                     }
 
                     setOnPreparedListener {
@@ -769,9 +852,15 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             stopAudio()
             return
         }
+
+        val nextIndex = currentIndex + 1
+
+        // Prefetch next 6 verses when approaching end of current chunk (e.g. at 5th verse)
+        if (nextIndex % 6 == 4 || nextIndex % 6 == 0) {
+            prefetchAudioChunk(nextIndex + 1, chunkSize = 6)
+        }
         
         if (currentContent != null) {
-            val nextIndex = currentIndex + 1
             if (nextIndex < currentContent.verses.size) {
                 val nextVerse = currentContent.verses[nextIndex]
                 playAudio(nextVerse.audioUrl, nextIndex)
@@ -779,7 +868,6 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                 stopAudio()
             }
         } else if (currentBook != null) {
-            val nextIndex = currentIndex + 1
             if (nextIndex < currentBook.paragraphs.size) {
                 val nextParagraph = currentBook.paragraphs[nextIndex]
                 val isEn = _readerSettings.value.language == AppLanguage.EN
@@ -1381,9 +1469,9 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             val surahMeta = com.example.data.model.QuranRepository.surahs.find { it.number == surahNum }
                 ?: QuranSurah(surahNum, "سورة", "Surah $surahNum", "Surah $surahNum", 7, "Meccan")
 
-            var surahContent = _surahInMemoryCache["surah_${surahNum}_${_readerSettings.value.language.name}"]
+            var surahContent = _surahInMemoryCache["surah_${surahNum}_${_readerSettings.value.language.name}_v3"]
             if (surahContent == null || surahContent!!.verses.isEmpty()) {
-                val quranEdition = if (_readerSettings.value.language == AppLanguage.EN) "en.sahih" else "tr.diyanet"
+                val quranEdition = if (_readerSettings.value.language == AppLanguage.EN) "en.sahih" else "tr.yazir"
                 val url = "https://api.alquran.cloud/v1/surah/$surahNum/editions/quran-uthmani,$quranEdition,ar.alafasy"
                 try {
                     val req = Request.Builder().url(url).build()
@@ -1404,7 +1492,11 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                                 for (i in 0 until count) {
                                     val arObj = arabicVerses.getJSONObject(i)
                                     val trObj = turkishVerses.getJSONObject(i)
-                                    versesList.add(QuranVerse(arObj.optInt("numberInSurah", i + 1), arObj.optString("text", ""), trObj.optString("text", ""), ""))
+                                    val vNum = arObj.optInt("numberInSurah", i + 1)
+                                    val rawAr = arObj.optString("text", "")
+                                    val rawTr = trObj.optString("text", "")
+                                    val (cleanAr, cleanTr) = cleanQuranVerseText(surahNum, vNum, rawAr, rawTr)
+                                    versesList.add(QuranVerse(vNum, cleanAr, cleanTr, ""))
                                 }
                                 surahContent = QuranSurahContent(surahNum, nameArabic, englishName, versesList)
                             }
@@ -1764,7 +1856,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                                 surahNum = quranMap[bookPart] ?: 48
                             }
                             
-                            val quranUrl = "https://api.alquran.cloud/v1/surah/${surahNum}/tr.diyanet"
+                            val quranUrl = "https://api.alquran.cloud/v1/surah/${surahNum}/tr.yazir"
                             val request = Request.Builder().url(quranUrl).build()
                             okHttpClient.newCall(request).execute().use { response ->
                                 if (response.isSuccessful) {
@@ -2257,6 +2349,11 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
 
         refreshActiveVerse()
         refreshLocationAndPrayerTimes()
+
+        // Restore external storage backup if present
+        restoreBackupIfAvailable()
+        // Save initial persistent state
+        exportPersistentBackup()
     }
 
     private fun checkCurrentUser() {
@@ -2324,6 +2421,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             bio = bio,
             photoUrl = if (photoUrl.isBlank()) null else photoUrl
         )
+        exportPersistentBackup()
     }
 
     fun copyImageUriToInternalStorage(uri: android.net.Uri): String? {
@@ -2395,7 +2493,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                 when (bookId) {
                     "quran" -> {
                         val randomAyah = (1..6236).random()
-                        val quranEdition = if (currentLang == AppLanguage.EN) "en.yusufali" else "tr.diyanet"
+                        val quranEdition = if (currentLang == AppLanguage.EN) "en.yusufali" else "tr.yazir"
                         val url = "https://api.alquran.cloud/v1/ayah/$randomAyah/$quranEdition"
                         val request = Request.Builder().url(url).build()
                         okHttpClient.newCall(request).execute().use { response ->
@@ -2827,6 +2925,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             .putString("language", settings.language.name)
             .putBoolean("show_original_script", settings.showOriginalScript)
             .apply()
+        exportPersistentBackup()
     }
 
     // Active Book state
@@ -3461,5 +3560,369 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
         
         val bookStr = "%02d".format(bookNum)
         return "https://audio.wordproject.org/bibles/audio/$langCode/$bookStr/$chapter.mp3"
+    }
+
+    // ==========================================
+    // PERSISTENT EXTERNAL MEMORY / BACKUP SYSTEM
+    // ==========================================
+
+    private fun getBackupFiles(): List<java.io.File> {
+        val app = getApplication<Application>()
+        val files = mutableListOf<java.io.File>()
+
+        try {
+            val docsDir = java.io.File(
+                android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS),
+                "Scriptorium"
+            )
+            files.add(java.io.File(docsDir, "scriptorium_user_backup.json"))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        try {
+            val secDir = java.io.File(
+                android.os.Environment.getExternalStorageDirectory(),
+                "ScriptoriumBackup"
+            )
+            files.add(java.io.File(secDir, "scriptorium_user_backup.json"))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        files.add(java.io.File(app.filesDir, "scriptorium_user_backup.json"))
+        return files
+    }
+
+    fun exportPersistentBackup() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val root = org.json.JSONObject()
+                root.put("version", 1)
+                root.put("lastBackupTime", System.currentTimeMillis())
+
+                // Downloads
+                val downloadedBooksArray = org.json.JSONArray()
+                _downloadedBooks.value.forEach { downloadedBooksArray.put(it) }
+                root.put("downloadedBooks", downloadedBooksArray)
+
+                val downloadedSurahsArray = org.json.JSONArray()
+                _downloadedSurahs.value.forEach { downloadedSurahsArray.put(it) }
+                root.put("downloadedSurahs", downloadedSurahsArray)
+
+                val downloadedChaptersArray = org.json.JSONArray()
+                _downloadedChapters.value.forEach { downloadedChaptersArray.put(it) }
+                root.put("downloadedChapters", downloadedChaptersArray)
+
+                // Reader Settings
+                val rs = _readerSettings.value
+                val settingsObj = org.json.JSONObject()
+                settingsObj.put("theme", rs.theme.name)
+                settingsObj.put("fontSizeSp", rs.fontSizeSp.toDouble())
+                settingsObj.put("fontFamily", rs.fontFamily.name)
+                settingsObj.put("lineHeight", rs.lineHeight.name)
+                settingsObj.put("language", rs.language.name)
+                settingsObj.put("showOriginalScript", rs.showOriginalScript)
+                root.put("readerSettings", settingsObj)
+
+                // Religion & Sect & Verse Selection
+                root.put("userReligion", _userReligion.value.id)
+                root.put("userSect", _userSect.value.id)
+                root.put("notificationsEnabled", _notificationsEnabled.value)
+                root.put("notificationIntervalMinutes", _notificationIntervalMinutes.value)
+
+                val selectedBooksArray = org.json.JSONArray()
+                _selectedBooksForVerse.value.forEach { selectedBooksArray.put(it) }
+                root.put("selectedBooksForVerse", selectedBooksArray)
+
+                // User Profile
+                val userStateVal = _userState.value
+                val profileObj = org.json.JSONObject()
+                profileObj.put("displayName", userStateVal.displayName ?: "")
+                profileObj.put("bio", userStateVal.bio ?: "")
+                profileObj.put("photoUrl", userStateVal.photoUrl ?: "")
+                profileObj.put("isDemoLoggedIn", userStateVal.isDemo)
+                profileObj.put("email", userStateVal.email ?: "")
+                root.put("userProfile", profileObj)
+
+                // Notes & Highlights
+                val notesList = notesHighlights.value
+                val notesArray = org.json.JSONArray()
+                notesList.forEach { note ->
+                    val nObj = org.json.JSONObject()
+                    nObj.put("id", note.id)
+                    nObj.put("bookTitle", note.bookTitle)
+                    nObj.put("quoteText", note.quoteText)
+                    nObj.put("userReflection", note.userReflection ?: "")
+                    nObj.put("dateText", note.dateText)
+                    nObj.put("type", note.type)
+                    notesArray.put(nObj)
+                }
+                root.put("notesHighlights", notesArray)
+
+                // Reading History
+                val historyList = readingHistory.value
+                val historyArray = org.json.JSONArray()
+                historyList.forEach { h ->
+                    val hObj = org.json.JSONObject()
+                    hObj.put("id", h.id)
+                    hObj.put("bookTitle", h.bookTitle)
+                    hObj.put("subtitle", h.subtitle)
+                    hObj.put("progressPercent", h.progressPercent)
+                    hObj.put("dateText", h.dateText)
+                    hObj.put("surahOrChapter", h.surahOrChapter ?: "")
+                    hObj.put("pagesRead", h.pagesRead)
+                    hObj.put("isCompleted", h.isCompleted)
+                    hObj.put("contemplationMinutes", h.contemplationMinutes)
+                    historyArray.put(hObj)
+                }
+                root.put("readingHistory", historyArray)
+
+                val jsonStr = root.toString(2)
+                getBackupFiles().forEach { file ->
+                    try {
+                        file.parentFile?.mkdirs()
+                        file.writeText(jsonStr)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun restoreBackupIfAvailable() {
+        val targetFile = getBackupFiles().firstOrNull { it.exists() && it.length() > 0 } ?: return
+        try {
+            val jsonStr = targetFile.readText()
+            if (jsonStr.isBlank()) return
+            val root = org.json.JSONObject(jsonStr)
+
+            // Restore Downloads
+            if (root.has("downloadedBooks")) {
+                val arr = root.getJSONArray("downloadedBooks")
+                val set = mutableSetOf<String>()
+                for (i in 0 until arr.length()) set.add(arr.getString(i))
+                _downloadedBooks.value = set
+                val offlinePrefs = getApplication<Application>().getSharedPreferences("scriptorium_offline", Context.MODE_PRIVATE)
+                offlinePrefs.edit().putStringSet("downloaded_books", set).apply()
+            }
+
+            if (root.has("downloadedSurahs")) {
+                val arr = root.getJSONArray("downloadedSurahs")
+                val set = mutableSetOf<Int>()
+                val strSet = mutableSetOf<String>()
+                for (i in 0 until arr.length()) {
+                    set.add(arr.getInt(i))
+                    strSet.add(arr.getInt(i).toString())
+                }
+                _downloadedSurahs.value = set
+                val offlinePrefs = getApplication<Application>().getSharedPreferences("scriptorium_offline", Context.MODE_PRIVATE)
+                offlinePrefs.edit().putStringSet("downloaded_surahs", strSet).apply()
+            }
+
+            if (root.has("downloadedChapters")) {
+                val arr = root.getJSONArray("downloadedChapters")
+                val set = mutableSetOf<String>()
+                for (i in 0 until arr.length()) set.add(arr.getString(i))
+                _downloadedChapters.value = set
+                val offlinePrefs = getApplication<Application>().getSharedPreferences("scriptorium_offline", Context.MODE_PRIVATE)
+                offlinePrefs.edit().putStringSet("downloaded_chapters", set).apply()
+            }
+
+            // Restore Reader Settings
+            if (root.has("readerSettings")) {
+                val settingsObj = root.getJSONObject("readerSettings")
+                val themeStr = settingsObj.optString("theme", "LIGHT")
+                val fontSize = settingsObj.optDouble("fontSizeSp", 20.0).toFloat()
+                val fontFamilyStr = settingsObj.optString("fontFamily", "SERIF")
+                val lineHeightStr = settingsObj.optString("lineHeight", "NORMAL")
+                val languageStr = settingsObj.optString("language", "EN")
+                val showOriginal = settingsObj.optBoolean("showOriginalScript", true)
+
+                _readerSettings.value = ReaderSettings(
+                    theme = try { AppThemeSetting.valueOf(themeStr) } catch (e: Exception) { AppThemeSetting.LIGHT },
+                    fontSizeSp = fontSize,
+                    fontFamily = try { FontFamilySetting.valueOf(fontFamilyStr) } catch (e: Exception) { FontFamilySetting.SERIF },
+                    lineHeight = try { LineHeightSetting.valueOf(lineHeightStr) } catch (e: Exception) { LineHeightSetting.NORMAL },
+                    language = try { AppLanguage.valueOf(languageStr) } catch (e: Exception) { AppLanguage.EN },
+                    showOriginalScript = showOriginal
+                )
+
+                val settingsPrefs = getApplication<Application>().getSharedPreferences("scriptorium_settings", Context.MODE_PRIVATE)
+                settingsPrefs.edit()
+                    .putString("theme", themeStr)
+                    .putFloat("font_size", fontSize)
+                    .putString("font_family", fontFamilyStr)
+                    .putString("line_height", lineHeightStr)
+                    .putString("language", languageStr)
+                    .putBoolean("show_original_script", showOriginal)
+                    .apply()
+            }
+
+            // Restore Religion & Sect
+            val authPrefs = getApplication<Application>().getSharedPreferences("scriptorium_auth", Context.MODE_PRIVATE)
+            if (root.has("userReligion")) {
+                val relId = root.getString("userReligion")
+                val loadedReligion = UserReligion.fromId(relId)
+                _userReligion.value = loadedReligion
+                authPrefs.edit().putString("user_religion", relId).apply()
+            }
+            if (root.has("userSect")) {
+                val sectId = root.getString("userSect")
+                val loadedSect = UserSect.fromId(sectId, _userReligion.value)
+                _userSect.value = loadedSect
+                authPrefs.edit().putString("user_sect", sectId).apply()
+            }
+
+            if (root.has("notificationsEnabled")) {
+                val enabled = root.getBoolean("notificationsEnabled")
+                _notificationsEnabled.value = enabled
+                authPrefs.edit().putBoolean("notifications_enabled", enabled).apply()
+            }
+            if (root.has("notificationIntervalMinutes")) {
+                val interval = root.getInt("notificationIntervalMinutes")
+                _notificationIntervalMinutes.value = interval
+                authPrefs.edit().putInt("notification_interval_minutes", interval).apply()
+            }
+
+            if (root.has("selectedBooksForVerse")) {
+                val arr = root.getJSONArray("selectedBooksForVerse")
+                val set = mutableSetOf<String>()
+                for (i in 0 until arr.length()) set.add(arr.getString(i))
+                _selectedBooksForVerse.value = set
+                authPrefs.edit().putStringSet("selected_verse_books", set).apply()
+            }
+
+            // Restore Profile
+            if (root.has("userProfile")) {
+                val prof = root.getJSONObject("userProfile")
+                val name = prof.optString("displayName", "")
+                val bio = prof.optString("bio", "")
+                val photoUrl = prof.optString("photoUrl", "")
+                val isDemo = prof.optBoolean("isDemoLoggedIn", false)
+                val email = prof.optString("email", "yolcu@scriptorium.org")
+
+                if (name.isNotEmpty() || bio.isNotEmpty() || isDemo) {
+                    authPrefs.edit()
+                        .putString("custom_name", if (name.isNotEmpty()) name else null)
+                        .putString("custom_bio", bio)
+                        .putString("custom_photo_url", if (photoUrl.isNotEmpty()) photoUrl else null)
+                        .putBoolean("is_demo_logged_in", isDemo)
+                        .putString("demo_email", email)
+                        .putString("demo_name", name)
+                        .apply()
+
+                    _userState.value = UserState(
+                        email = email,
+                        displayName = if (name.isNotEmpty()) name else "Bilgelik Yolcusu",
+                        photoUrl = if (photoUrl.isNotEmpty()) photoUrl else null,
+                        bio = bio,
+                        isLoggedIn = true,
+                        isDemo = isDemo
+                    )
+                }
+            }
+
+            // Restore Notes & Highlights in Room DB
+            if (root.has("notesHighlights")) {
+                val arr = root.getJSONArray("notesHighlights")
+                viewModelScope.launch(Dispatchers.IO) {
+                    for (i in 0 until arr.length()) {
+                        val obj = arr.getJSONObject(i)
+                        val note = NoteHighlight(
+                            id = obj.optInt("id", 0),
+                            bookTitle = obj.optString("bookTitle", ""),
+                            quoteText = obj.optString("quoteText", ""),
+                            userReflection = obj.optString("userReflection", null),
+                            dateText = obj.optString("dateText", ""),
+                            type = obj.optString("type", "Highlight")
+                        )
+                        repository.insertNoteHighlight(note)
+                    }
+                }
+            }
+
+            // Restore Reading History in Room DB
+            if (root.has("readingHistory")) {
+                val arr = root.getJSONArray("readingHistory")
+                viewModelScope.launch(Dispatchers.IO) {
+                    for (i in 0 until arr.length()) {
+                        val obj = arr.getJSONObject(i)
+                        repository.updateReadingProgress(
+                            bookTitle = obj.optString("bookTitle", ""),
+                            subtitle = obj.optString("subtitle", ""),
+                            progress = obj.optInt("progressPercent", 0),
+                            dateText = obj.optString("dateText", ""),
+                            surahOrChapter = obj.optString("surahOrChapter", null),
+                            pagesRead = obj.optInt("pagesRead", 0),
+                            isCompleted = obj.optBoolean("isCompleted", false),
+                            contemplationMinutes = obj.optInt("contemplationMinutes", 0)
+                        )
+                    }
+                }
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun forgetMeAndClearAllData(onComplete: () -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            stopAudio()
+
+            // 1. Delete all backup files & directories
+            getBackupFiles().forEach { file ->
+                try {
+                    if (file.exists()) file.delete()
+                    file.parentFile?.delete()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            // 2. Clear Room Database
+            try {
+                repository.clearAllUserData()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            // 3. Clear SharedPreferences
+            val app = getApplication<Application>()
+            app.getSharedPreferences("scriptorium_offline", Context.MODE_PRIVATE).edit().clear().apply()
+            app.getSharedPreferences("scriptorium_settings", Context.MODE_PRIVATE).edit().clear().apply()
+            app.getSharedPreferences("scriptorium_auth", Context.MODE_PRIVATE).edit().clear().apply()
+
+            // 4. Delete local cached surah / book JSON files
+            try {
+                app.filesDir?.listFiles()?.forEach { file ->
+                    if (file.name.endsWith(".json") || file.name.endsWith(".jpg") || file.name.endsWith(".png") || file.name.endsWith(".mp3")) {
+                        file.delete()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            // 5. Reset ViewModel states
+            withContext(Dispatchers.Main) {
+                _downloadedBooks.value = emptySet()
+                _downloadedSurahs.value = emptySet()
+                _downloadedChapters.value = emptySet()
+                _readerSettings.value = ReaderSettings()
+                _userReligion.value = UserReligion.ISLAM
+                _userSect.value = UserSect.SUNNI
+                _selectedBooksForVerse.value = books.map { it.id }.toSet()
+                _notificationsEnabled.value = true
+                _notificationIntervalMinutes.value = 1440
+                _userState.value = UserState(isLoggedIn = false)
+
+                onComplete()
+            }
+        }
     }
 }

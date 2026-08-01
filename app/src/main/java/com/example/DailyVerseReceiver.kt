@@ -98,7 +98,7 @@ class DailyVerseReceiver : BroadcastReceiver() {
             when (bookId) {
                 "quran" -> {
                     val randomAyah = (1..6236).random()
-                    val quranEdition = if (isEn) "en.yusufali" else "tr.diyanet"
+                    val quranEdition = if (isEn) "en.yusufali" else "tr.yazir"
                     val url = "https://api.alquran.cloud/v1/ayah/$randomAyah/$quranEdition"
                     val request = Request.Builder().url(url).build()
                     client.newCall(request).execute().use { response ->

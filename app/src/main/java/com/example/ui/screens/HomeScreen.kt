@@ -58,10 +58,13 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.MenuBook,
+                        AsyncImage(
+                            model = com.Muhsin.kutuphane.R.drawable.app_logo_icon_1785607132737,
                             contentDescription = "Scriptorium Logo",
-                            tint = MaterialTheme.colorScheme.primary
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
                         )
                         Text(
                             text = "Scriptorium",

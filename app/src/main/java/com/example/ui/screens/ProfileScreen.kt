@@ -68,6 +68,7 @@ fun ProfileScreen(
     val userState by viewModel.userState.collectAsState()
     var showAboutDialog by remember { mutableStateOf(false) }
     var showEditProfileDialog by remember { mutableStateOf(false) }
+    var showForgetMeDialog by remember { mutableStateOf(false) }
     var isReligionCardExpanded by rememberSaveable { mutableStateOf(false) }
 
     var tempName by remember(userState.displayName) { mutableStateOf(userState.displayName ?: "") }
@@ -1285,7 +1286,70 @@ fun ProfileScreen(
                 }
             }
 
-            // 5. Logout Button
+            // 5. "Beni Unut (!)" / "Forget Me (!)" Card
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp)
+                        .border(
+                            width = 1.5.dp,
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.6f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .clickable { showForgetMeDialog = true }
+                        .testTag("forget_me_button"),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.12f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.error.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "(!)",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = if (lang == AppLanguage.EN) "Forget Me (!)" else "Beni Unut (!)",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Text(
+                                text = if (lang == AppLanguage.EN)
+                                    "Permanently delete all reading history, notes, downloaded books, settings, and external memory backup files from this phone."
+                                else
+                                    "Cihazınızdaki ve harici bellekteki tüm okuma geçmişini, notları, indirilen kitapları ve yedek dosyasını kalıcı olarak siler.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 6. Logout Button
             item {
                 Button(
                     onClick = { viewModel.signOut() },
@@ -1318,5 +1382,84 @@ fun ProfileScreen(
                 }
             }
         }
+    }
+
+    if (showForgetMeDialog) {
+        AlertDialog(
+            onDismissRequest = { showForgetMeDialog = false },
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "(!)",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            title = {
+                Text(
+                    text = if (lang == AppLanguage.EN) "Forget Me & Erase Data (!)" else "Beni Unut ve Tüm Verileri Sil (!)",
+                    fontFamily = FontFamily.Serif,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = if (lang == AppLanguage.EN)
+                            "ARE YOU SURE?\n\nThis action will PERMANENTLY DELETE:\n• All reading history & progress\n• All notes & highlighted verses\n• All downloaded offline books & surahs\n• Language, font & theme settings\n• External memory backup file (scriptorium_user_backup.json)\n\nEven if you reinstall the app, these files will be gone permanently!"
+                        else
+                            "EMİN MİSİNİZ?\n\nBu işlem aşağıdakileri KALICI OLARAK SİLECEKTİR:\n• Tüm okuma geçmişi ve ilerleme kayıtları\n• Tüm notlar ve fosforlu ayetler\n• İndirilen tüm çevrimdışı kitaplar ve sureler\n• Dil, yazı tipi ve görünüm ayarları\n• Telefon hafızasındaki yedek dosyası (scriptorium_user_backup.json)\n\nUygulama silinip tekrar yüklense bile bu veriler bir daha geri getirilemez!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        lineHeight = 20.sp
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showForgetMeDialog = false
+                        viewModel.forgetMeAndClearAllData {
+                            android.widget.Toast.makeText(
+                                ctx,
+                                if (lang == AppLanguage.EN) "All data and external memory backups have been permanently erased." else "Tüm verileriniz ve harici bellek yedeği kalıcı olarak silindi.",
+                                android.widget.Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.testTag("confirm_forget_me_button")
+                ) {
+                    Text(
+                        text = if (lang == AppLanguage.EN) "Yes, Forget Me" else "Evet, Beni Unut",
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { showForgetMeDialog = false },
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(if (lang == AppLanguage.EN) "Cancel" else "Vazgeç")
+                }
+            },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     }
 }
