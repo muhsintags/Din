@@ -52,8 +52,8 @@ import java.io.FileOutputStream
 
 enum class StoryTemplate(val title: String, val badge: String, val bgColors: List<Color>, val cardBg: Color, val textColor: Color, val accentColor: Color) {
     NGL_PINK(
-        title = "NGL Pembe",
-        badge = "✨ SCRIPTorium • Tefekkür ✨",
+        title = "Pembe",
+        badge = "✨ scriptorium • Tefekkür ✨",
         bgColors = listOf(Color(0xFFFF007A), Color(0xFF7928CA), Color(0xFF4A00E0)),
         cardBg = Color(0xF2FFFFFF),
         textColor = Color(0xFF111827),
@@ -173,7 +173,7 @@ fun StoryVerseShareDialog(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Instagram & NGL Hikaye Kartı",
+                                text = "Instagram Hikaye Kartı",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -461,7 +461,7 @@ private fun VerseStoryCardContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // NGL Badge / Top Emblem
+        // Badge / Top Emblem
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(20.dp))
