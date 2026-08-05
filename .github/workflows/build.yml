@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build Android Release
+    name: Build Android Release APK
     runs-on: ubuntu-latest
 
     steps:
@@ -24,23 +24,25 @@ jobs:
 
       - name: Decode keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-release-key.jks
-          echo "KEYSTORE_PATH=$PWD/my-release-key.jks" >> $GITHUB_ENV
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-upload-key.jks
+          echo "KEYSTORE_PATH=$PWD/my-upload-key.jks" >> $GITHUB_ENV
 
-      - name: Verify keystore
+      - name: Check keystore
         run: |
-          file my-release-key.jks
+          file my-upload-key.jks
 
-      - name: Grant Gradle permission
+      - name: Give gradlew permission
         run: |
           chmod +x ./gradlew
 
       - name: Build Release APK
         run: |
           ./gradlew assembleRelease
-
         env:
           KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
