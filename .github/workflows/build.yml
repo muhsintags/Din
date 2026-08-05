@@ -1,28 +1,49 @@
-name: Build APK
+name: Build Release APK
+
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   build:
+    name: Build Android Release APK
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v5
         with:
-          distribution: 'temurin'
           java-version: '17'
-      - name: Generate debug keystore
-        run: keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          distribution: 'temurin'
+          cache: gradle
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.3.1'
-      - name: Build with Gradle
-        run: gradle assembleDebug
-      - name: Upload APK
+          validate-wrappers: false
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-upload-key.jks
+          echo "KEYSTORE_PATH=$PWD/my-upload-key.jks" >> $GITHUB_ENV
+
+      - name: Build Release APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
+        env:
+          KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: release-apk
+          path: app/build/outputs/apk/release/*.apk
