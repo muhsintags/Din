@@ -173,7 +173,7 @@ fun StoryVerseShareDialog(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Instagram'da hikaye olarak paylaş",
+                                text = "Instagram & NGL Hikaye Kartı",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

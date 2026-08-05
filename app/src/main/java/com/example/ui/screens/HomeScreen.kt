@@ -252,8 +252,9 @@ fun HomeScreen(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
+                                        val cleanText = activeVerse.text.trim().removePrefix("\"").removeSuffix("\"").trim()
                                         Text(
-                                            text = "\"${activeVerse.text}\"",
+                                            text = "\"$cleanText\"",
                                             fontFamily = FontFamily.Serif,
                                             fontStyle = FontStyle.Italic,
                                             fontSize = 18.sp,
@@ -278,32 +279,6 @@ fun HomeScreen(
                                                 letterSpacing = 1.sp
                                             )
                                         }
-
-                                        AssistChip(
-                                            onClick = { showShareDialog = true },
-                                            label = {
-                                                Text(
-                                                    text = if (lang == AppLanguage.EN) "Share with Story Template" else "NGL & Hikaye Şablonuyla Paylaş",
-                                                    style = MaterialTheme.typography.labelSmall
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    imageVector = Icons.Filled.AutoAwesome,
-                                                    contentDescription = null,
-                                                    tint = SacredGold,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                            },
-                                            colors = AssistChipDefaults.assistChipColors(
-                                                containerColor = SacredGold.copy(alpha = 0.12f),
-                                                labelColor = SacredGold
-                                            ),
-                                            border = AssistChipDefaults.assistChipBorder(
-                                                enabled = true,
-                                                borderColor = SacredGold.copy(alpha = 0.3f)
-                                            )
-                                        )
                                     }
                                 }
                             }

@@ -70,6 +70,7 @@ fun ProfileScreen(
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showForgetMeDialog by remember { mutableStateOf(false) }
     var isReligionCardExpanded by rememberSaveable { mutableStateOf(false) }
+    var isNotificationsCardExpanded by rememberSaveable { mutableStateOf(false) }
 
     var tempName by remember(userState.displayName) { mutableStateOf(userState.displayName ?: "") }
     var tempBio by remember(userState.bio) { mutableStateOf(userState.bio ?: "") }
@@ -801,12 +802,21 @@ fun ProfileScreen(
                                     }
                                 }
 
-                                Icon(
-                                    imageVector = if (isReligionCardExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                                    contentDescription = if (isReligionCardExpanded) "Daralt" else "Genişlet",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(start = 8.dp)
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = if (isReligionCardExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                        contentDescription = if (isReligionCardExpanded) "Daralt" else "Genişlet",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                             }
 
                             AnimatedVisibility(visible = isReligionCardExpanded) {
@@ -1005,243 +1015,295 @@ fun ProfileScreen(
                         }
                     }
 
-                    // Notifications Switch Row
+                    // Notifications Switch Row (Collapsible Card with Chevron)
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().testTag("notifications_card"),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface
                         ),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(12.dp),
                         border = CardDefaults.outlinedCardBorder()
                     ) {
                         Column {
+                            // Header Row
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { isNotificationsCardExpanded = !isNotificationsCardExpanded }
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                    modifier = Modifier.weight(1f)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.NotificationsActive,
                                         contentDescription = Loc.get("notifications", lang),
-                                        tint = MaterialTheme.colorScheme.primary
+                                        tint = SacredGold,
+                                        modifier = Modifier.size(24.dp)
                                     )
-                                    Text(
-                                        text = Loc.get("notifications", lang),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                    Column {
+                                        Text(
+                                            text = Loc.get("notifications", lang),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            text = if (notificationsEnabled) {
+                                                if (lang == AppLanguage.EN) "Active • Interval: $currentIntervalMinutes min" else "Aktif • Sıklık: $currentIntervalMinutes dk"
+                                            } else {
+                                                if (lang == AppLanguage.EN) "Disabled" else "Kapalı"
+                                            },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (notificationsEnabled) SacredGold else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = if (isNotificationsCardExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                        contentDescription = if (isNotificationsCardExpanded) "Daralt" else "Genişlet",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
-                                Switch(
-                                    checked = notificationsEnabled,
-                                    onCheckedChange = { checked ->
-                                        if (checked) {
-                                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                                                val permission = android.Manifest.permission.POST_NOTIFICATIONS
-                                                if (androidx.core.content.ContextCompat.checkSelfPermission(ctx, permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                                                    (ctx as? android.app.Activity)?.let { activity ->
-                                                        androidx.core.app.ActivityCompat.requestPermissions(
-                                                            activity,
-                                                            arrayOf(permission),
-                                                            101
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        viewModel.toggleNotifications()
-                                    },
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = Color.White,
-                                        checkedTrackColor = MaterialTheme.colorScheme.primary,
-                                        uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
-                                    ),
-                                    modifier = Modifier.testTag("notification_switch")
-                                )
                             }
 
-                            if (notificationsEnabled) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                                )
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Text(
-                                        text = if (lang == AppLanguage.EN) "NOTIFICATION FREQUENCY" else "BİLDİRİM SIKLIĞI",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                        letterSpacing = 1.sp,
-                                        modifier = Modifier.padding(bottom = 2.dp)
-                                    )
-                                    
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        OutlinedTextField(
-                                            value = intervalInput,
-                                            onValueChange = { newValue ->
-                                                if (newValue.all { it.isDigit() }) {
-                                                    intervalInput = newValue
-                                                }
-                                            },
-                                            label = { Text(if (lang == AppLanguage.EN) "Interval Value" else "Süre Değeri") },
-                                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                                            ),
-                                            singleLine = true,
-                                            modifier = Modifier.weight(1.2f).testTag("notification_interval_input")
-                                        )
-                                        
-                                        Row(
-                                            modifier = Modifier.weight(1.8f),
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
-                                            FilterChip(
-                                                selected = !intervalUnitIsHours,
-                                                onClick = { intervalUnitIsHours = false },
-                                                label = { Text(if (lang == AppLanguage.EN) "Minutes" else "Dakika") }
-                                            )
-                                            FilterChip(
-                                                selected = intervalUnitIsHours,
-                                                onClick = { intervalUnitIsHours = true },
-                                                label = { Text(if (lang == AppLanguage.EN) "Hours" else "Saat") }
-                                            )
-                                        }
-                                    }
-                                    
-                                    val parsedValue = intervalInput.toIntOrNull() ?: 0
-                                    val isInputValid = if (intervalUnitIsHours) parsedValue >= 1 else parsedValue >= 2
-                                    val errorText = when {
-                                        intervalInput.isEmpty() -> if (lang == AppLanguage.EN) "Please enter a valid number." else "Lütfen geçerli bir sayı girin."
-                                        !isInputValid -> if (intervalUnitIsHours) {
-                                            if (lang == AppLanguage.EN) "At least 1 hour must be selected." else "En az 1 saat seçilmelidir."
-                                        } else {
-                                            if (lang == AppLanguage.EN) "At least 2 minutes must be selected." else "En az 2 dakika seçilmelidir."
-                                        }
-                                        else -> null
-                                    }
-                                    
-                                    if (errorText != null) {
-                                        Text(
-                                            text = errorText,
-                                            color = MaterialTheme.colorScheme.error,
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                    }
-                                    
-                                    Button(
-                                        onClick = {
-                                            val minutes = if (intervalUnitIsHours) parsedValue * 60 else parsedValue
-                                            viewModel.updateNotificationInterval(minutes)
-                                        },
-                                        enabled = isInputValid && errorText == null,
-                                        modifier = Modifier.fillMaxWidth().testTag("save_interval_button"),
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Text(if (lang == AppLanguage.EN) "Update Notification Interval" else "Bildirim Sıklığını Güncelle")
-                                    }
-
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    OutlinedButton(
-                                        onClick = {
-                                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                                                val permission = android.Manifest.permission.POST_NOTIFICATIONS
-                                                if (androidx.core.content.ContextCompat.checkSelfPermission(ctx, permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                                                    (ctx as? android.app.Activity)?.let { activity ->
-                                                        androidx.core.app.ActivityCompat.requestPermissions(
-                                                            activity,
-                                                            arrayOf(permission),
-                                                            101
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                            viewModel.sendTestNotification()
-                                        },
-                                        modifier = Modifier.fillMaxWidth().testTag("send_test_notification_button"),
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = SacredGold),
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, SacredGold)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.NotificationsActive,
-                                            contentDescription = "Test",
-                                            modifier = Modifier.padding(end = 8.dp).size(18.dp)
-                                        )
-                                        Text(if (lang == AppLanguage.EN) "Send Test Notification" else "Test Bildirimi Gönder")
-                                    }
-                                    
+                            AnimatedVisibility(visible = isNotificationsCardExpanded) {
+                                Column {
                                     HorizontalDivider(
-                                        modifier = Modifier.padding(vertical = 4.dp),
+                                        modifier = Modifier.padding(horizontal = 16.dp),
                                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                                     )
 
-                                    Text(
-                                        text = if (lang == AppLanguage.EN) "NOTIFICATION SOURCES" else "BİLDİRİM GELECEK KAYNAKLAR",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                        letterSpacing = 1.sp,
-                                        modifier = Modifier.padding(bottom = 4.dp)
-                                    )
-                                    
-                                    viewModel.books.forEach { book ->
-                                        val isSelected = selectedBooks.contains(book.id)
-                                        val bookTitle = Loc.get(book.id, lang)
-                                        Row(
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = if (lang == AppLanguage.EN) "Enable Daily Verses" else "Günlük Ayet Bildirimlerini Aç",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Switch(
+                                            checked = notificationsEnabled,
+                                            onCheckedChange = { checked ->
+                                                if (checked) {
+                                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                                        val permission = android.Manifest.permission.POST_NOTIFICATIONS
+                                                        if (androidx.core.content.ContextCompat.checkSelfPermission(ctx, permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                                            (ctx as? android.app.Activity)?.let { activity ->
+                                                                androidx.core.app.ActivityCompat.requestPermissions(
+                                                                    activity,
+                                                                    arrayOf(permission),
+                                                                    101
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                viewModel.toggleNotifications()
+                                            },
+                                            colors = SwitchDefaults.colors(
+                                                checkedThumbColor = Color.White,
+                                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                                            ),
+                                            modifier = Modifier.testTag("notification_switch")
+                                        )
+                                    }
+
+                                    if (notificationsEnabled) {
+                                        Column(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .clickable { viewModel.toggleVerseBookSelection(book.id) }
-                                                .padding(vertical = 8.dp, horizontal = 4.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
+                                                .padding(16.dp),
+                                            verticalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
+                                            Text(
+                                                text = if (lang == AppLanguage.EN) "NOTIFICATION FREQUENCY" else "BİLDİRİM SIKLIĞI",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                                letterSpacing = 1.sp,
+                                                modifier = Modifier.padding(bottom = 2.dp)
+                                            )
+                                            
                                             Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                val bookIcon = when (book.id) {
-                                                    "quran" -> Icons.Filled.AutoStories
-                                                    "torah" -> Icons.AutoMirrored.Filled.MenuBook
-                                                    "sermon" -> Icons.Filled.HistoryEdu
-                                                    else -> Icons.Filled.Book
-                                                }
-                                                Icon(
-                                                    imageVector = bookIcon,
-                                                    contentDescription = bookTitle,
-                                                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                                    modifier = Modifier.size(20.dp)
+                                                OutlinedTextField(
+                                                    value = intervalInput,
+                                                    onValueChange = { newValue ->
+                                                        if (newValue.all { it.isDigit() }) {
+                                                            intervalInput = newValue
+                                                        }
+                                                    },
+                                                    label = { Text(if (lang == AppLanguage.EN) "Interval Value" else "Süre Değeri") },
+                                                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                                                    ),
+                                                    singleLine = true,
+                                                    modifier = Modifier.weight(1.2f).testTag("notification_interval_input")
                                                 )
+                                                
+                                                Row(
+                                                    modifier = Modifier.weight(1.8f),
+                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                ) {
+                                                    FilterChip(
+                                                        selected = !intervalUnitIsHours,
+                                                        onClick = { intervalUnitIsHours = false },
+                                                        label = { Text(if (lang == AppLanguage.EN) "Minutes" else "Dakika") }
+                                                    )
+                                                    FilterChip(
+                                                        selected = intervalUnitIsHours,
+                                                        onClick = { intervalUnitIsHours = true },
+                                                        label = { Text(if (lang == AppLanguage.EN) "Hours" else "Saat") }
+                                                    )
+                                                }
+                                            }
+                                            
+                                            val parsedValue = intervalInput.toIntOrNull() ?: 0
+                                            val isInputValid = if (intervalUnitIsHours) parsedValue >= 1 else parsedValue >= 2
+                                            val errorText = when {
+                                                intervalInput.isEmpty() -> if (lang == AppLanguage.EN) "Please enter a valid number." else "Lütfen geçerli bir sayı girin."
+                                                !isInputValid -> if (intervalUnitIsHours) {
+                                                    if (lang == AppLanguage.EN) "At least 1 hour must be selected." else "En az 1 saat seçilmelidir."
+                                                } else {
+                                                    if (lang == AppLanguage.EN) "At least 2 minutes must be selected." else "En az 2 dakika seçilmelidir."
+                                                }
+                                                else -> null
+                                            }
+                                            
+                                            if (errorText != null) {
                                                 Text(
-                                                    text = bookTitle,
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                                                    text = errorText,
+                                                    color = MaterialTheme.colorScheme.error,
+                                                    style = MaterialTheme.typography.bodySmall
                                                 )
                                             }
-                                            Checkbox(
-                                                checked = isSelected,
-                                                onCheckedChange = { viewModel.toggleVerseBookSelection(book.id) },
-                                                colors = CheckboxDefaults.colors(
-                                                    checkedColor = MaterialTheme.colorScheme.primary,
-                                                    uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                            
+                                            Button(
+                                                onClick = {
+                                                    val minutes = if (intervalUnitIsHours) parsedValue * 60 else parsedValue
+                                                    viewModel.updateNotificationInterval(minutes)
+                                                },
+                                                enabled = isInputValid && errorText == null,
+                                                modifier = Modifier.fillMaxWidth().testTag("save_interval_button"),
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Text(if (lang == AppLanguage.EN) "Update Notification Interval" else "Bildirim Sıklığını Güncelle")
+                                            }
+
+                                            Spacer(modifier = Modifier.height(8.dp))
+
+                                            OutlinedButton(
+                                                onClick = {
+                                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                                        val permission = android.Manifest.permission.POST_NOTIFICATIONS
+                                                        if (androidx.core.content.ContextCompat.checkSelfPermission(ctx, permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                                            (ctx as? android.app.Activity)?.let { activity ->
+                                                                androidx.core.app.ActivityCompat.requestPermissions(
+                                                                    activity,
+                                                                    arrayOf(permission),
+                                                                    101
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                    viewModel.sendTestNotification()
+                                                },
+                                                modifier = Modifier.fillMaxWidth().testTag("send_test_notification_button"),
+                                                shape = RoundedCornerShape(8.dp),
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = SacredGold),
+                                                border = androidx.compose.foundation.BorderStroke(1.dp, SacredGold)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Filled.NotificationsActive,
+                                                    contentDescription = "Test",
+                                                    modifier = Modifier.padding(end = 8.dp).size(18.dp)
                                                 )
+                                                Text(if (lang == AppLanguage.EN) "Send Test Notification" else "Test Bildirimi Gönder")
+                                            }
+                                            
+                                            HorizontalDivider(
+                                                modifier = Modifier.padding(vertical = 4.dp),
+                                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                                             )
+
+                                            Text(
+                                                text = if (lang == AppLanguage.EN) "NOTIFICATION SOURCES" else "BİLDİRİM GELECEK KAYNAKLAR",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                                letterSpacing = 1.sp,
+                                                modifier = Modifier.padding(bottom = 4.dp)
+                                            )
+                                            
+                                            viewModel.books.forEach { book ->
+                                                val isSelected = selectedBooks.contains(book.id)
+                                                val bookTitle = Loc.get(book.id, lang)
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .clickable { viewModel.toggleVerseBookSelection(book.id) }
+                                                        .padding(vertical = 8.dp, horizontal = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.SpaceBetween
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                                    ) {
+                                                        val bookIcon = when (book.id) {
+                                                            "quran" -> Icons.Filled.AutoStories
+                                                            "torah" -> Icons.AutoMirrored.Filled.MenuBook
+                                                            "sermon" -> Icons.Filled.HistoryEdu
+                                                            else -> Icons.Filled.Book
+                                                        }
+                                                        Icon(
+                                                            imageVector = bookIcon,
+                                                            contentDescription = bookTitle,
+                                                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                                            modifier = Modifier.size(20.dp)
+                                                        )
+                                                        Text(
+                                                            text = bookTitle,
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                                                        )
+                                                    }
+                                                    Checkbox(
+                                                        checked = isSelected,
+                                                        onCheckedChange = { viewModel.toggleVerseBookSelection(book.id) },
+                                                        colors = CheckboxDefaults.colors(
+                                                            checkedColor = MaterialTheme.colorScheme.primary,
+                                                            uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                                        )
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
