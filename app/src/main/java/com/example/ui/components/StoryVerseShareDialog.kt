@@ -52,8 +52,8 @@ import java.io.FileOutputStream
 
 enum class StoryTemplate(val title: String, val badge: String, val bgColors: List<Color>, val cardBg: Color, val textColor: Color, val accentColor: Color) {
     NGL_PINK(
-        title = "Pembe",
-        badge = "✨ scriptorium • Tefekkür ✨",
+        title = "NGL Pembe",
+        badge = "✨ SCRIPTorium • Tefekkür ✨",
         bgColors = listOf(Color(0xFFFF007A), Color(0xFF7928CA), Color(0xFF4A00E0)),
         cardBg = Color(0xF2FFFFFF),
         textColor = Color(0xFF111827),
@@ -106,6 +106,17 @@ enum class CardRatio(val label: String, val aspectRatio: Float) {
     SQUARE_1_1("Kare (1:1)", 1.0f)
 }
 
+private fun cleanVerseQuotes(raw: String): String {
+    var t = raw.trim()
+    while (t.startsWith("\"") || t.startsWith("“") || t.startsWith("”") || t.startsWith("'") || t.startsWith("«") || t.startsWith("„")) {
+        t = t.substring(1).trim()
+    }
+    while (t.endsWith("\"") || t.endsWith("“") || t.endsWith("”") || t.endsWith("'") || t.endsWith("»") || t.endsWith("“") || t.endsWith("„")) {
+        t = t.substring(0, t.length - 1).trim()
+    }
+    return t
+}
+
 @Composable
 fun StoryVerseShareDialog(
     verseText: String,
@@ -114,6 +125,7 @@ fun StoryVerseShareDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val cleanText = remember(verseText) { cleanVerseQuotes(verseText) }
     var selectedTemplate by remember { mutableStateOf(StoryTemplate.NGL_PINK) }
     var selectedRatio by remember { mutableStateOf(CardRatio.STORY_9_16) }
     var userHandle by remember { mutableStateOf("@scriptorium") }
@@ -173,7 +185,7 @@ fun StoryVerseShareDialog(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Instagram Hikaye Kartı",
+                                text = "Instagram & NGL Hikaye Kartı",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -421,7 +433,7 @@ fun StoryVerseShareDialog(
                         OutlinedButton(
                             onClick = {
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                val clip = ClipData.newPlainText("Ayet", "\"$verseText\"\n— $reference")
+                                val clip = ClipData.newPlainText("Ayet", "\"$cleanText\"\n— $reference")
                                 clipboard.setPrimaryClip(clip)
                                 Toast.makeText(context, "Ayet kopyalandı", Toast.LENGTH_SHORT).show()
                             },
@@ -461,7 +473,7 @@ private fun VerseStoryCardContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Badge / Top Emblem
+        // NGL Badge / Top Emblem
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(20.dp))
@@ -526,8 +538,9 @@ private fun VerseStoryCardContent(
                 }
 
                 // Translated Verse Text
+                val cleanText = remember(verseText) { cleanVerseQuotes(verseText) }
                 Text(
-                    text = "\"$verseText\"",
+                    text = "\"$cleanText\"",
                     color = template.textColor,
                     fontFamily = FontFamily.Serif,
                     fontStyle = FontStyle.Italic,
@@ -587,6 +600,7 @@ private fun shareVerseImage(
     reference: String,
     isInstagramDirect: Boolean
 ) {
+    val cleanText = cleanVerseQuotes(verseText)
     try {
         val width = picture.width.coerceAtLeast(1080)
         val height = picture.height.coerceAtLeast(1920)
@@ -610,7 +624,7 @@ private fun shareVerseImage(
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "image/png"
             putExtra(Intent.EXTRA_STREAM, contentUri)
-            putExtra(Intent.EXTRA_TEXT, "\"$verseText\"\n\n— $reference\n\nScriptorium")
+            putExtra(Intent.EXTRA_TEXT, "\"$cleanText\"\n\n— $reference\n\nScriptorium")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 
@@ -647,7 +661,7 @@ private fun shareVerseImage(
             val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "image/png"
                 putExtra(Intent.EXTRA_STREAM, contentUri)
-                putExtra(Intent.EXTRA_TEXT, "\"$verseText\"\n\n— $reference\n\nScriptorium")
+                putExtra(Intent.EXTRA_TEXT, "\"$cleanText\"\n\n— $reference\n\nScriptorium")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             val chooser = Intent.createChooser(fallbackIntent, "Ayet Şablonunu Paylaş")

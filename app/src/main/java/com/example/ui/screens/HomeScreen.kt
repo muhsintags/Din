@@ -252,7 +252,16 @@ fun HomeScreen(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        val cleanText = activeVerse.text.trim().removePrefix("\"").removeSuffix("\"").trim()
+                                        val cleanText = remember(activeVerse.text) {
+                                            var t = activeVerse.text.trim()
+                                            while (t.startsWith("\"") || t.startsWith("“") || t.startsWith("”") || t.startsWith("'") || t.startsWith("«") || t.startsWith("„")) {
+                                                t = t.substring(1).trim()
+                                            }
+                                            while (t.endsWith("\"") || t.endsWith("“") || t.endsWith("”") || t.endsWith("'") || t.endsWith("»") || t.endsWith("„")) {
+                                                t = t.substring(0, t.length - 1).trim()
+                                            }
+                                            t
+                                        }
                                         Text(
                                             text = "\"$cleanText\"",
                                             fontFamily = FontFamily.Serif,
