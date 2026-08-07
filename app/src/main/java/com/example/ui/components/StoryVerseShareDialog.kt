@@ -593,6 +593,21 @@ private fun VerseStoryCardContent(
     }
 }
 
+private fun createStoryBitmap(picture: Picture): Bitmap {
+    val srcWidth = picture.width.coerceAtLeast(1)
+    val srcHeight = picture.height.coerceAtLeast(1)
+
+    val targetWidth = 1080
+    val scale = targetWidth.toFloat() / srcWidth.toFloat()
+    val targetHeight = (srcHeight * scale).toInt().coerceAtLeast(1)
+
+    val bitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    canvas.scale(scale, scale)
+    canvas.drawPicture(picture)
+    return bitmap
+}
+
 private fun shareVerseImage(
     context: Context,
     picture: Picture,
@@ -602,11 +617,7 @@ private fun shareVerseImage(
 ) {
     val cleanText = cleanVerseQuotes(verseText)
     try {
-        val width = picture.width.coerceAtLeast(1080)
-        val height = picture.height.coerceAtLeast(1920)
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        canvas.drawPicture(picture)
+        val bitmap = createStoryBitmap(picture)
 
         val cachePath = File(context.cacheDir, "shared_verses")
         cachePath.mkdirs()
@@ -639,11 +650,7 @@ private fun shareVerseImage(
         e.printStackTrace()
         // Fallback to generic chooser if instagram app is not installed
         try {
-            val width = picture.width.coerceAtLeast(1080)
-            val height = picture.height.coerceAtLeast(1920)
-            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(bitmap)
-            canvas.drawPicture(picture)
+            val bitmap = createStoryBitmap(picture)
 
             val cachePath = File(context.cacheDir, "shared_verses")
             cachePath.mkdirs()
