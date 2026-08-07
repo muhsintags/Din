@@ -350,10 +350,10 @@ fun ProfileScreen(
             // 1. Profile Header
             item {
                 val displayName = userState.displayName ?: (if (lang == AppLanguage.EN) "Journey of Wisdom" else "Bilgelik Yolcusu")
-                val email = if (userState.isDemo || userState.email == "misafir@scriptorium.org") {
+                val email = if (userState.isDemo || userState.email == "misafir@Scriptorium.org") {
                     if (lang == AppLanguage.EN) "Guest Reader" else "Misafir Okuyucu"
                 } else {
-                    userState.email ?: "yolcu@scriptorium.org"
+                    userState.email ?: "yolcu@Scriptorium.org"
                 }
                 val initials = displayName.split(" ")
                     .filter { it.isNotBlank() }

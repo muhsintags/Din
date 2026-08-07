@@ -49,7 +49,7 @@ fun LoginScreen(
     fun performLogin(name: String) {
         val defaultName = if (lang == AppLanguage.EN) "Wisdom Pilgrim" else "Bilgelik Yolcusu"
         val finalName = name.trim().ifEmpty { defaultName }
-        viewModel.signInWithDemo("misafir@scriptorium.org", finalName)
+        viewModel.signInWithDemo("misafir@Scriptorium.org", finalName)
         val toastText = if (lang == AppLanguage.EN) "Welcome, $finalName!" else "Hoş geldiniz, $finalName!"
         Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show()
         onLoginSuccess()

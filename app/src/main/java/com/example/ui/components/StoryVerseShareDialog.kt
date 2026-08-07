@@ -52,8 +52,8 @@ import java.io.FileOutputStream
 
 enum class StoryTemplate(val title: String, val badge: String, val bgColors: List<Color>, val cardBg: Color, val textColor: Color, val accentColor: Color) {
     NGL_PINK(
-        title = "NGL Pembe",
-        badge = "✨ SCRIPTorium • Tefekkür ✨",
+        title = "Pembe",
+        badge = "✨ Scriptorium • Tefekkür ✨",
         bgColors = listOf(Color(0xFFFF007A), Color(0xFF7928CA), Color(0xFF4A00E0)),
         cardBg = Color(0xF2FFFFFF),
         textColor = Color(0xFF111827),
@@ -61,7 +61,7 @@ enum class StoryTemplate(val title: String, val badge: String, val bgColors: Lis
     ),
     SACRED_GOLD(
         title = "Altın Medine",
-        badge = "🕌 SCRIPTorium • Kutsal Metin",
+        badge = "🕌 Scriptorium • Kutsal Metin",
         bgColors = listOf(Color(0xFF091712), Color(0xFF133227), Color(0xFF091712)),
         cardBg = Color(0x1AD4AF37),
         textColor = Color(0xFFF9FAFB),
@@ -69,7 +69,7 @@ enum class StoryTemplate(val title: String, val badge: String, val bgColors: Lis
     ),
     MIDNIGHT_GLOW(
         title = "Aura Gece",
-        badge = "🌌 SCRIPTorium • Gece Tefekkürü",
+        badge = "🌌 Scriptorium • Gece Tefekkürü",
         bgColors = listOf(Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF020617)),
         cardBg = Color(0x3338BDF8),
         textColor = Color(0xFFF8FAFC),
@@ -77,7 +77,7 @@ enum class StoryTemplate(val title: String, val badge: String, val bgColors: Lis
     ),
     PARCHMENT_MANUSCRIPT(
         title = "Tarihi Parşömen",
-        badge = "📜 SCRIPTorium • Kadim Kitap",
+        badge = "📜 Scriptorium • Kadim Kitap",
         bgColors = listOf(Color(0xFFF5EBE0), Color(0xFFE6D5C3), Color(0xFFD5C3B1)),
         cardBg = Color(0xCCFFFFFF),
         textColor = Color(0xFF2C1A0E),
@@ -85,7 +85,7 @@ enum class StoryTemplate(val title: String, val badge: String, val bgColors: Lis
     ),
     AURORA_HORIZON(
         title = "Şafak Işığı",
-        badge = "🌅 SCRIPTorium • Sabah Tefekkürü",
+        badge = "🌅 Scriptorium • Sabah Tefekkürü",
         bgColors = listOf(Color(0xFF1A2A6C), Color(0xFFB21F1F), Color(0xFFFDBB2D)),
         cardBg = Color(0xE6FFFFFF),
         textColor = Color(0xFF1E293B),
@@ -93,7 +93,7 @@ enum class StoryTemplate(val title: String, val badge: String, val bgColors: Lis
     ),
     MINIMAL_DARK(
         title = "Sade Siyah",
-        badge = "⚡ SCRIPTorium",
+        badge = "⚡ Scriptorium",
         bgColors = listOf(Color(0xFF09090B), Color(0xFF18181B), Color(0xFF09090B)),
         cardBg = Color(0xFF18181B),
         textColor = Color(0xFFFAFAFA),
@@ -128,7 +128,7 @@ fun StoryVerseShareDialog(
     val cleanText = remember(verseText) { cleanVerseQuotes(verseText) }
     var selectedTemplate by remember { mutableStateOf(StoryTemplate.NGL_PINK) }
     var selectedRatio by remember { mutableStateOf(CardRatio.STORY_9_16) }
-    var userHandle by remember { mutableStateOf("@scriptorium") }
+    var userHandle by remember { mutableStateOf("@Scriptorium") }
     var showOriginal by remember { mutableStateOf(false) }
 
     val picture = remember { Picture() }
@@ -185,7 +185,7 @@ fun StoryVerseShareDialog(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Instagram & NGL Hikaye Kartı",
+                                text = "Instagram Hikaye Kartı",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -473,7 +473,7 @@ private fun VerseStoryCardContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // NGL Badge / Top Emblem
+        // Badge / Top Emblem
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(20.dp))
