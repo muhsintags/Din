@@ -160,7 +160,7 @@ fun ReadingHistoryScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun HistoryItemRow(
     hist: com.example.data.model.ReadingHistory,
@@ -245,29 +245,29 @@ fun HistoryItemRow(
 
             // Metrics Row
             if (hist.pagesRead > 0 || hist.contemplationMinutes > 0 || hist.isCompleted) {
-                Row(
+                FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     if (hist.pagesRead > 0) {
                         SuggestionChip(
                             onClick = {},
-                            label = { Text("${hist.pagesRead} Sayfa") },
+                            label = { Text("${hist.pagesRead} Sayfa", maxLines = 1, softWrap = false) },
                             icon = { Icon(Icons.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp)) }
                         )
                     }
                     if (hist.contemplationMinutes > 0) {
                         SuggestionChip(
                             onClick = {},
-                            label = { Text("${hist.contemplationMinutes} Dk Tefekkür") },
+                            label = { Text("${hist.contemplationMinutes} Dk Tefekkür", maxLines = 1, softWrap = false) },
                             icon = { Icon(Icons.Filled.HourglassEmpty, contentDescription = null, modifier = Modifier.size(16.dp)) }
                         )
                     }
                     if (hist.isCompleted) {
                         SuggestionChip(
                             onClick = {},
-                            label = { Text("Tamamlandı") },
+                            label = { Text("Tamamlandı", maxLines = 1, softWrap = false) },
                             icon = { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(16.dp)) },
                             colors = SuggestionChipDefaults.suggestionChipColors(
                                 labelColor = SacredGold
