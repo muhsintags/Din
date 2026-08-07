@@ -1,1 +1,13 @@
+# Kritik build/imzalama dosyaları
+/app/build.gradle.kts @muhsintags
+*.jks @muhsintags
+/gradle/wrapper/gradle-wrapper.jar @muhsintags
+/.github/workflows/ @muhsintags
+/.gitattributes @muhsintags
 
+# Lisans ve dokümantasyon
+/LICENSE @muhsintags
+/README.md @muhsintags
+
+# Bu dosyanın kendisi (kimse CODEOWNERS'ı değiştirip korumaları kaldıramasın)
+/.github/CODEOWNERS @muhsintags
