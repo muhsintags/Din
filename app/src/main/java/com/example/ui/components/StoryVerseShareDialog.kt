@@ -52,8 +52,8 @@ import java.io.FileOutputStream
 
 enum class StoryTemplate(val title: String, val badge: String, val bgColors: List<Color>, val cardBg: Color, val textColor: Color, val accentColor: Color) {
     NGL_PINK(
-        title = "Pembe",
-        badge = "✨ Scriptorium • Tefekkür ✨",
+        title = "NGL Pembe",
+        badge = "✨ SCRIPTorium • Tefekkür ✨",
         bgColors = listOf(Color(0xFFFF007A), Color(0xFF7928CA), Color(0xFF4A00E0)),
         cardBg = Color(0xF2FFFFFF),
         textColor = Color(0xFF111827),
@@ -61,7 +61,7 @@ enum class StoryTemplate(val title: String, val badge: String, val bgColors: Lis
     ),
     SACRED_GOLD(
         title = "Altın Medine",
-        badge = "🕌 Scriptorium • Kutsal Metin",
+        badge = "🕌 SCRIPTorium • Kutsal Metin",
         bgColors = listOf(Color(0xFF091712), Color(0xFF133227), Color(0xFF091712)),
         cardBg = Color(0x1AD4AF37),
         textColor = Color(0xFFF9FAFB),
@@ -69,7 +69,7 @@ enum class StoryTemplate(val title: String, val badge: String, val bgColors: Lis
     ),
     MIDNIGHT_GLOW(
         title = "Aura Gece",
-        badge = "🌌 Scriptorium • Gece Tefekkürü",
+        badge = "🌌 SCRIPTorium • Gece Tefekkürü",
         bgColors = listOf(Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF020617)),
         cardBg = Color(0x3338BDF8),
         textColor = Color(0xFFF8FAFC),
@@ -77,7 +77,7 @@ enum class StoryTemplate(val title: String, val badge: String, val bgColors: Lis
     ),
     PARCHMENT_MANUSCRIPT(
         title = "Tarihi Parşömen",
-        badge = "📜 Scriptorium • Kadim Kitap",
+        badge = "📜 SCRIPTorium • Kadim Kitap",
         bgColors = listOf(Color(0xFFF5EBE0), Color(0xFFE6D5C3), Color(0xFFD5C3B1)),
         cardBg = Color(0xCCFFFFFF),
         textColor = Color(0xFF2C1A0E),
@@ -85,7 +85,7 @@ enum class StoryTemplate(val title: String, val badge: String, val bgColors: Lis
     ),
     AURORA_HORIZON(
         title = "Şafak Işığı",
-        badge = "🌅 Scriptorium • Sabah Tefekkürü",
+        badge = "🌅 SCRIPTorium • Sabah Tefekkürü",
         bgColors = listOf(Color(0xFF1A2A6C), Color(0xFFB21F1F), Color(0xFFFDBB2D)),
         cardBg = Color(0xE6FFFFFF),
         textColor = Color(0xFF1E293B),
@@ -93,7 +93,7 @@ enum class StoryTemplate(val title: String, val badge: String, val bgColors: Lis
     ),
     MINIMAL_DARK(
         title = "Sade Siyah",
-        badge = "⚡ Scriptorium",
+        badge = "⚡ SCRIPTorium",
         bgColors = listOf(Color(0xFF09090B), Color(0xFF18181B), Color(0xFF09090B)),
         cardBg = Color(0xFF18181B),
         textColor = Color(0xFFFAFAFA),
@@ -114,7 +114,7 @@ private fun cleanVerseQuotes(raw: String): String {
     while (t.endsWith("\"") || t.endsWith("“") || t.endsWith("”") || t.endsWith("'") || t.endsWith("»") || t.endsWith("“") || t.endsWith("„")) {
         t = t.substring(0, t.length - 1).trim()
     }
-    return t
+    return t.replace("\r\n", " ").replace("\n", " ").replace(Regex("\\s+"), " ").trim()
 }
 
 @Composable
@@ -128,7 +128,7 @@ fun StoryVerseShareDialog(
     val cleanText = remember(verseText) { cleanVerseQuotes(verseText) }
     var selectedTemplate by remember { mutableStateOf(StoryTemplate.NGL_PINK) }
     var selectedRatio by remember { mutableStateOf(CardRatio.STORY_9_16) }
-    var userHandle by remember { mutableStateOf("@Scriptorium") }
+    var userHandle by remember { mutableStateOf("@scriptorium") }
     var showOriginal by remember { mutableStateOf(false) }
 
     val picture = remember { Picture() }
@@ -185,7 +185,7 @@ fun StoryVerseShareDialog(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Instagram Hikaye Kartı",
+                                text = "Instagram & NGL Hikaye Kartı",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -469,11 +469,11 @@ private fun VerseStoryCardContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(if (isStoryRatio) 12.dp else 8.dp),
+            .padding(if (isStoryRatio) 12.dp else 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Badge / Top Emblem
+        // NGL Badge / Top Emblem
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(20.dp))
@@ -486,14 +486,15 @@ private fun VerseStoryCardContent(
                     color = template.accentColor.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(20.dp)
                 )
-                .padding(horizontal = 14.dp, vertical = 6.dp)
+                .padding(horizontal = 12.dp, vertical = if (isStoryRatio) 6.dp else 4.dp)
         ) {
             Text(
                 text = template.badge,
                 style = MaterialTheme.typography.labelSmall,
                 color = if (template == StoryTemplate.NGL_PINK) Color.White else template.textColor,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp
+                letterSpacing = 0.5.sp,
+                fontSize = if (isStoryRatio) 11.sp else 10.sp
             )
         }
 
@@ -501,8 +502,8 @@ private fun VerseStoryCardContent(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            shape = RoundedCornerShape(24.dp),
+                .padding(vertical = if (isStoryRatio) 10.dp else 4.dp),
+            shape = RoundedCornerShape(if (isStoryRatio) 24.dp else 16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = template.cardBg
             ),
@@ -513,17 +514,17 @@ private fun VerseStoryCardContent(
         ) {
             Column(
                 modifier = Modifier
-                    .padding(20.dp)
+                    .padding(if (isStoryRatio) 18.dp else 10.dp)
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(if (isStoryRatio) 10.dp else 4.dp)
             ) {
                 // Opening Quote Icon
                 Icon(
                     imageVector = Icons.Filled.FormatQuote,
                     contentDescription = null,
                     tint = template.accentColor,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(if (isStoryRatio) 28.dp else 22.dp)
                 )
 
                 // Optional Original Script
@@ -531,9 +532,11 @@ private fun VerseStoryCardContent(
                     Text(
                         text = originalText,
                         color = template.textColor.copy(alpha = 0.85f),
-                        fontSize = if (isStoryRatio) 16.sp else 14.sp,
+                        fontSize = if (isStoryRatio) 15.sp else 12.sp,
                         textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
@@ -544,17 +547,17 @@ private fun VerseStoryCardContent(
                     color = template.textColor,
                     fontFamily = FontFamily.Serif,
                     fontStyle = FontStyle.Italic,
-                    fontSize = if (isStoryRatio) 17.sp else 15.sp,
-                    lineHeight = if (isStoryRatio) 26.sp else 22.sp,
+                    fontSize = if (isStoryRatio) 16.sp else 12.5.sp,
+                    lineHeight = if (isStoryRatio) 24.sp else 17.sp,
                     textAlign = TextAlign.Center,
-                    maxLines = 8,
+                    maxLines = if (isStoryRatio) 8 else 4,
                     overflow = TextOverflow.Ellipsis
                 )
 
                 // Divider Line
                 Box(
                     modifier = Modifier
-                        .width(40.dp)
+                        .width(32.dp)
                         .height(2.dp)
                         .background(template.accentColor)
                 )
@@ -565,7 +568,10 @@ private fun VerseStoryCardContent(
                     color = template.accentColor,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
+                    fontSize = if (isStoryRatio) 12.sp else 10.5.sp,
+                    letterSpacing = 0.8.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -573,20 +579,22 @@ private fun VerseStoryCardContent(
         // Bottom User Branding / Handle Tag
         if (userHandle.isNotBlank()) {
             Row(
+                modifier = Modifier.padding(bottom = if (isStoryRatio) 6.dp else 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Icon(
                     imageVector = Icons.Filled.Bookmark,
                     contentDescription = null,
-                    tint = template.textColor.copy(alpha = 0.7f),
-                    modifier = Modifier.size(14.dp)
+                    tint = template.textColor.copy(alpha = 0.8f),
+                    modifier = Modifier.size(if (isStoryRatio) 14.dp else 12.dp)
                 )
                 Text(
                     text = userHandle,
                     style = MaterialTheme.typography.labelSmall,
-                    color = template.textColor.copy(alpha = 0.8f),
-                    fontWeight = FontWeight.Medium
+                    color = template.textColor.copy(alpha = 0.9f),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = if (isStoryRatio) 11.sp else 10.sp
                 )
             }
         }

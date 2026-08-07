@@ -2266,7 +2266,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                 val isDemoLoggedIn = prefs.getBoolean("is_demo_logged_in", false)
                 if (isDemoLoggedIn) {
                     _userState.value = UserState(
-                        email = prefs.getString("demo_email", "yolcu@Scriptorium.org"),
+                        email = prefs.getString("demo_email", "yolcu@scriptorium.org"),
                         displayName = customName ?: prefs.getString("demo_name", "Bilgelik Yolcusu"),
                         photoUrl = customPhotoUrl,
                         bio = customBio,
@@ -2285,7 +2285,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
             val isDemoLoggedIn = prefs.getBoolean("is_demo_logged_in", false)
             if (isDemoLoggedIn) {
                 _userState.value = UserState(
-                    email = prefs.getString("demo_email", "yolcu@Scriptorium.org"),
+                    email = prefs.getString("demo_email", "yolcu@scriptorium.org"),
                     displayName = customName ?: prefs.getString("demo_name", "Bilgelik Yolcusu"),
                     photoUrl = customPhotoUrl,
                     bio = customBio,
@@ -3813,7 +3813,7 @@ class ScriptureViewModel(application: Application) : AndroidViewModel(applicatio
                 val bio = prof.optString("bio", "")
                 val photoUrl = prof.optString("photoUrl", "")
                 val isDemo = prof.optBoolean("isDemoLoggedIn", false)
-                val email = prof.optString("email", "yolcu@Scriptorium.org")
+                val email = prof.optString("email", "yolcu@scriptorium.org")
 
                 if (name.isNotEmpty() || bio.isNotEmpty() || isDemo) {
                     authPrefs.edit()

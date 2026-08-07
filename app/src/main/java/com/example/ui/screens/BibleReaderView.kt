@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.BibleBook
@@ -84,6 +85,7 @@ fun BibleReaderView(
     val isChapterDownloaded = downloadedChapters.contains(chapterKey)
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    var showLanguageCard by remember { mutableStateOf(false) }
 
     LaunchedEffect(currentSelectedChapter, activeBook) {
         val chapterVal = currentSelectedChapter
@@ -292,13 +294,17 @@ fun BibleReaderView(
                             fontFamily = FontFamily.Serif,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.titleLarge
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         if (currentSelectedBook != null) {
                             Text(
                                 text = "${currentSelectedBook?.nameEnglish} • ${currentSelectedBook?.sourceLanguage}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -766,7 +772,7 @@ fun BibleReaderView(
                             }
                         }
 
-                        // Reading Mode & Audio Row (No prompt inputs)
+                        // Reading Mode & Audio Row (Collapsible)
                         item {
                             Card(
                                 colors = CardDefaults.cardColors(
@@ -780,79 +786,112 @@ fun BibleReaderView(
                                 shape = RoundedCornerShape(16.dp)
                             ) {
                                 Column(
-                                    modifier = Modifier.padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                                 ) {
-                                    if (activeBook.originalParagraphs.isNotEmpty()) {
-                                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    // Header Toggle Row
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable { showLanguageCard = !showLanguageCard },
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Language,
+                                                contentDescription = null,
+                                                tint = SacredGold,
+                                                modifier = Modifier.size(18.dp)
+                                            )
                                             Text(
-                                                text = if (lang == AppLanguage.EN) "READING LANGUAGE" else "OKUMA DİLİ",
+                                                text = if (lang == AppLanguage.EN) "READING LANGUAGE & OPTIONS" else "OKUMA DİLİ VE SEÇENEKLER",
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 fontWeight = FontWeight.Bold
                                             )
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                            ) {
-                                                val modes = listOf(
-                                                    "turkish" to (if (lang == AppLanguage.EN) "Turkish" else "Türkçe"),
-                                                    "original" to activeBook.originalLanguageName,
-                                                    "bilingual" to (if (lang == AppLanguage.EN) "Bilingual" else "İki Dilli")
-                                                )
-                                                modes.forEach { (mode, label) ->
-                                                    val isSelected = languageMode == mode
-                                                    Card(
-                                                        modifier = Modifier
-                                                            .weight(1f)
-                                                            .clickable { languageMode = mode },
-                                                        colors = CardDefaults.cardColors(
-                                                            containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                                        ),
-                                                        shape = RoundedCornerShape(8.dp)
-                                                    ) {
-                                                        Box(
+                                        }
+
+                                        IconButton(
+                                            onClick = { showLanguageCard = !showLanguageCard },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = if (showLanguageCard) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                                contentDescription = "Gizle/Göster",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    if (showLanguageCard) {
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        if (activeBook.originalParagraphs.isNotEmpty()) {
+                                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    val modes = listOf(
+                                                        "turkish" to (if (lang == AppLanguage.EN) "Turkish" else "Türkçe"),
+                                                        "original" to activeBook.originalLanguageName,
+                                                        "bilingual" to (if (lang == AppLanguage.EN) "Bilingual" else "İki Dilli")
+                                                    )
+                                                    modes.forEach { (mode, label) ->
+                                                        val isSelected = languageMode == mode
+                                                        Card(
                                                             modifier = Modifier
-                                                                .fillMaxWidth()
-                                                                .height(36.dp),
-                                                            contentAlignment = Alignment.Center
+                                                                .weight(1f)
+                                                                .clickable { languageMode = mode },
+                                                            colors = CardDefaults.cardColors(
+                                                                containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                                            ),
+                                                            shape = RoundedCornerShape(8.dp)
                                                         ) {
-                                                            Text(
-                                                                text = label,
-                                                                style = MaterialTheme.typography.labelLarge,
-                                                                fontWeight = FontWeight.SemiBold,
-                                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                                                                fontSize = 11.sp,
-                                                                textAlign = TextAlign.Center,
-                                                                modifier = Modifier.padding(horizontal = 4.dp)
-                                                            )
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .fillMaxWidth()
+                                                                    .height(36.dp),
+                                                                contentAlignment = Alignment.Center
+                                                            ) {
+                                                                Text(
+                                                                    text = label,
+                                                                    style = MaterialTheme.typography.labelLarge,
+                                                                    fontWeight = FontWeight.SemiBold,
+                                                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                                                    fontSize = 11.sp,
+                                                                    textAlign = TextAlign.Center,
+                                                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                                                )
+                                                            }
                                                         }
                                                     }
                                                 }
                                             }
+                                            
+                                            HorizontalDivider(
+                                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+                                                modifier = Modifier.padding(vertical = 12.dp)
+                                            )
                                         }
-                                        
-                                        HorizontalDivider(
-                                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
-                                            modifier = Modifier.padding(vertical = 4.dp)
-                                        )
-                                    }
 
-                                    // Offline Status & Download Actions
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = if (isChapterDownloaded) {
-                                                    if (lang == AppLanguage.EN) "Saved to Device" else "Cihazda Kayıtlı"
-                                                } else {
-                                                    if (lang == AppLanguage.EN) "Download Chapter" else "Bölümü İndir"
-                                                },
-                                                style = MaterialTheme.typography.titleSmall,
-                                                fontWeight = FontWeight.Bold,
+                                        // Offline Status & Download Actions
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = if (isChapterDownloaded) {
+                                                        if (lang == AppLanguage.EN) "Saved to Device" else "Cihazda Kayıtlı"
+                                                    } else {
+                                                        if (lang == AppLanguage.EN) "Download Chapter" else "Bölümü İndir"
+                                                    },
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
                                                 color = if (isChapterDownloaded) SacredGold else MaterialTheme.colorScheme.onSurface
                                             )
                                             Text(
@@ -894,11 +933,10 @@ fun BibleReaderView(
                                             }
                                         }
                                     }
-
-                                    // Real Human Audio player section removed from Bible and Torah screen
                                 }
                             }
                         }
+                    }
 
                         // Render Verses / Paragraphs
                         items(activeBook.paragraphs.size) { index ->

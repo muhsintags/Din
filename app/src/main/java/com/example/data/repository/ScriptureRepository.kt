@@ -23,119 +23,156 @@ class ScriptureRepository(
     private var historyListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     private fun getUserId(): String? {
-        return com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        return try {
+            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        } catch (e: Exception) {
+            null
+        }
     }
 
     fun startFirestoreSync(userId: String, scope: kotlinx.coroutines.CoroutineScope) {
         stopFirestoreSync()
 
-        val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        try {
+            val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
 
-        // 1. Sync notes & highlights from Firestore to Room
-        notesListener = db.collection("users").document(userId).collection("notes_highlights")
-            .addSnapshotListener { snapshots, error ->
-                if (error != null) return@addSnapshotListener
-                if (snapshots != null) {
-                    for (dc in snapshots.documentChanges) {
-                        val doc = dc.document
-                        val id = doc.id.toIntOrNull() ?: continue
-                        when (dc.type) {
-                            com.google.firebase.firestore.DocumentChange.Type.ADDED,
-                            com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
-                                val note = NoteHighlight(
-                                    id = id,
-                                    bookTitle = doc.getString("bookTitle") ?: "",
-                                    quoteText = doc.getString("quoteText") ?: "",
-                                    userReflection = doc.getString("userReflection"),
-                                    dateText = doc.getString("dateText") ?: "",
-                                    type = doc.getString("type") ?: "Highlight"
-                                )
-                                scope.launch {
-                                    noteHighlightDao.insertNoteHighlight(note)
+            // 1. Sync notes & highlights from Firestore to Room
+            notesListener = db.collection("users").document(userId).collection("notes_highlights")
+                .addSnapshotListener { snapshots, error ->
+                    if (error != null) return@addSnapshotListener
+                    if (snapshots != null) {
+                        for (dc in snapshots.documentChanges) {
+                            val doc = dc.document
+                            val id = doc.id.toIntOrNull() ?: continue
+                            when (dc.type) {
+                                com.google.firebase.firestore.DocumentChange.Type.ADDED,
+                                com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
+                                    val note = NoteHighlight(
+                                        id = id,
+                                        bookTitle = doc.getString("bookTitle") ?: "",
+                                        quoteText = doc.getString("quoteText") ?: "",
+                                        userReflection = doc.getString("userReflection"),
+                                        dateText = doc.getString("dateText") ?: "",
+                                        type = doc.getString("type") ?: "Highlight"
+                                    )
+                                    scope.launch {
+                                        try {
+                                            noteHighlightDao.insertNoteHighlight(note)
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
+                                    }
                                 }
-                            }
-                            com.google.firebase.firestore.DocumentChange.Type.REMOVED -> {
-                                scope.launch {
-                                    noteHighlightDao.deleteNoteHighlightById(id)
+                                com.google.firebase.firestore.DocumentChange.Type.REMOVED -> {
+                                    scope.launch {
+                                        try {
+                                            noteHighlightDao.deleteNoteHighlightById(id)
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-        // 2. Sync reading history from Firestore to Room
-        historyListener = db.collection("users").document(userId).collection("reading_histories")
-            .addSnapshotListener { snapshots, error ->
-                if (error != null) return@addSnapshotListener
-                if (snapshots != null) {
-                    for (dc in snapshots.documentChanges) {
-                        val doc = dc.document
-                        val id = doc.id.toIntOrNull() ?: continue
-                        when (dc.type) {
-                            com.google.firebase.firestore.DocumentChange.Type.ADDED,
-                            com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
-                                val history = ReadingHistory(
-                                    id = id,
-                                    bookTitle = doc.getString("bookTitle") ?: "",
-                                    subtitle = doc.getString("subtitle") ?: "",
-                                    progressPercent = doc.getLong("progressPercent")?.toInt() ?: 0,
-                                    dateText = doc.getString("dateText") ?: "",
-                                    surahOrChapter = doc.getString("surahOrChapter"),
-                                    pagesRead = doc.getLong("pagesRead")?.toInt() ?: 0,
-                                    isCompleted = doc.getBoolean("isCompleted") ?: false,
-                                    contemplationMinutes = doc.getLong("contemplationMinutes")?.toInt() ?: 0
-                                )
-                                scope.launch {
-                                    readingHistoryDao.insertOrUpdateHistory(history)
+            // 2. Sync reading history from Firestore to Room
+            historyListener = db.collection("users").document(userId).collection("reading_histories")
+                .addSnapshotListener { snapshots, error ->
+                    if (error != null) return@addSnapshotListener
+                    if (snapshots != null) {
+                        for (dc in snapshots.documentChanges) {
+                            val doc = dc.document
+                            val id = doc.id.toIntOrNull() ?: continue
+                            when (dc.type) {
+                                com.google.firebase.firestore.DocumentChange.Type.ADDED,
+                                com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
+                                    val history = ReadingHistory(
+                                        id = id,
+                                        bookTitle = doc.getString("bookTitle") ?: "",
+                                        subtitle = doc.getString("subtitle") ?: "",
+                                        progressPercent = doc.getLong("progressPercent")?.toInt() ?: 0,
+                                        dateText = doc.getString("dateText") ?: "",
+                                        surahOrChapter = doc.getString("surahOrChapter"),
+                                        pagesRead = doc.getLong("pagesRead")?.toInt() ?: 0,
+                                        isCompleted = doc.getBoolean("isCompleted") ?: false,
+                                        contemplationMinutes = doc.getLong("contemplationMinutes")?.toInt() ?: 0
+                                    )
+                                    scope.launch {
+                                        try {
+                                            readingHistoryDao.insertOrUpdateHistory(history)
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
+                                    }
                                 }
-                            }
-                            com.google.firebase.firestore.DocumentChange.Type.REMOVED -> {
-                                scope.launch {
-                                    readingHistoryDao.deleteHistoryById(id)
+                                com.google.firebase.firestore.DocumentChange.Type.REMOVED -> {
+                                    scope.launch {
+                                        try {
+                                            readingHistoryDao.deleteHistoryById(id)
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun stopFirestoreSync() {
-        notesListener?.remove()
-        notesListener = null
-        historyListener?.remove()
-        historyListener = null
+        try {
+            notesListener?.remove()
+            notesListener = null
+            historyListener?.remove()
+            historyListener = null
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     suspend fun insertNoteHighlight(noteHighlight: NoteHighlight) {
-        val rowId = noteHighlightDao.insertNoteHighlight(noteHighlight)
-        val userId = getUserId()
-        if (userId != null) {
-            val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-            val docId = if (noteHighlight.id != 0) noteHighlight.id.toString() else rowId.toString()
-            val data = hashMapOf(
-                "id" to docId.toInt(),
-                "bookTitle" to noteHighlight.bookTitle,
-                "quoteText" to noteHighlight.quoteText,
-                "userReflection" to noteHighlight.userReflection,
-                "dateText" to noteHighlight.dateText,
-                "type" to noteHighlight.type
-            )
-            db.collection("users").document(userId)
-                .collection("notes_highlights").document(docId)
-                .set(data)
+        val rowId = try { noteHighlightDao.insertNoteHighlight(noteHighlight) } catch (e: Exception) { 0L }
+        try {
+            val userId = getUserId()
+            if (userId != null) {
+                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                val finalId = if (noteHighlight.id != 0) noteHighlight.id else rowId.toInt()
+                val docId = finalId.toString()
+                val data = hashMapOf(
+                    "id" to finalId,
+                    "bookTitle" to noteHighlight.bookTitle,
+                    "quoteText" to noteHighlight.quoteText,
+                    "userReflection" to noteHighlight.userReflection,
+                    "dateText" to noteHighlight.dateText,
+                    "type" to noteHighlight.type
+                )
+                db.collection("users").document(userId)
+                    .collection("notes_highlights").document(docId)
+                    .set(data)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
     suspend fun deleteNoteHighlight(id: Int) {
-        noteHighlightDao.deleteNoteHighlightById(id)
-        val userId = getUserId()
-        if (userId != null) {
-            com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                .collection("users").document(userId)
-                .collection("notes_highlights").document(id.toString())
-                .delete()
+        try { noteHighlightDao.deleteNoteHighlightById(id) } catch (e: Exception) { e.printStackTrace() }
+        try {
+            val userId = getUserId()
+            if (userId != null) {
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("users").document(userId)
+                    .collection("notes_highlights").document(id.toString())
+                    .delete()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -157,7 +194,7 @@ class ScriptureRepository(
             else -> 400 // sermon / gospel / incil
         }
 
-        val previousList = readingHistoryDao.getHistoryListByBookTitle(bookTitle)
+        val previousList = try { readingHistoryDao.getHistoryListByBookTitle(bookTitle) } catch (e: Exception) { emptyList() }
         val previousPages = previousList.sumOf { it.pagesRead }
         val finalTotalPagesRead = previousPages + pagesRead
         
@@ -175,36 +212,45 @@ class ScriptureRepository(
             contemplationMinutes = contemplationMinutes
         )
 
-        val rowId = readingHistoryDao.insertOrUpdateHistory(historyToSave)
-        val userId = getUserId()
-        if (userId != null) {
-            val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-            val docId = if (historyToSave.id != 0) historyToSave.id.toString() else rowId.toString()
-            val data = hashMapOf(
-                "id" to docId.toInt(),
-                "bookTitle" to historyToSave.bookTitle,
-                "subtitle" to historyToSave.subtitle,
-                "progressPercent" to historyToSave.progressPercent,
-                "dateText" to historyToSave.dateText,
-                "surahOrChapter" to (historyToSave.surahOrChapter ?: ""),
-                "pagesRead" to historyToSave.pagesRead,
-                "isCompleted" to historyToSave.isCompleted,
-                "contemplationMinutes" to historyToSave.contemplationMinutes
-            )
-            db.collection("users").document(userId)
-                .collection("reading_histories").document(docId)
-                .set(data)
+        val rowId = try { readingHistoryDao.insertOrUpdateHistory(historyToSave) } catch (e: Exception) { 0L }
+        try {
+            val userId = getUserId()
+            if (userId != null) {
+                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                val finalId = if (historyToSave.id != 0) historyToSave.id else rowId.toInt()
+                val docId = finalId.toString()
+                val data = hashMapOf(
+                    "id" to finalId,
+                    "bookTitle" to historyToSave.bookTitle,
+                    "subtitle" to historyToSave.subtitle,
+                    "progressPercent" to historyToSave.progressPercent,
+                    "dateText" to historyToSave.dateText,
+                    "surahOrChapter" to (historyToSave.surahOrChapter ?: ""),
+                    "pagesRead" to historyToSave.pagesRead,
+                    "isCompleted" to historyToSave.isCompleted,
+                    "contemplationMinutes" to historyToSave.contemplationMinutes
+                )
+                db.collection("users").document(userId)
+                    .collection("reading_histories").document(docId)
+                    .set(data)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
     suspend fun deleteHistory(id: Int) {
-        readingHistoryDao.deleteHistoryById(id)
-        val userId = getUserId()
-        if (userId != null) {
-            com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                .collection("users").document(userId)
-                .collection("reading_histories").document(id.toString())
-                .delete()
+        try { readingHistoryDao.deleteHistoryById(id) } catch (e: Exception) { e.printStackTrace() }
+        try {
+            val userId = getUserId()
+            if (userId != null) {
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("users").document(userId)
+                    .collection("reading_histories").document(id.toString())
+                    .delete()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
